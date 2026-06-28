@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sammy – Jouw Financiële Regelneef</title>
+<!--
+  ╔══════════════════════════════════════════════════════════════╗
+  ║  Sammy – Jouw Financiële Regelneef / Il Tuo Consulente      ║
+  ║  Versie 2.0 · 2026                                          ║
+  ║                                                              ║
+  ║  © 2026 Jan den Hollander · jandenhollander@duck.com        ║
+  ║  github.com/Jan-den-Hollander                               ║
+  ║                                                              ║
+  ║  Gratis te gebruiken voor iedereen, ongeacht bank of        ║
+  ║  betaalprovider. Vrij van reclame en commerciële belangen.  ║
+  ║  Libero da pubblicità e interessi commerciali.              ║
+  ║                                                              ║
+  ║  Gebruik, deel en pas aan — maar vermeld de oorsprong.      ║
+  ║  Puoi usare, condividere e adattare – cita la fonte.        ║
+  ╚══════════════════════════════════════════════════════════════╝
+-->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #F5F0E8;
+    --paper: #FDFAF4;
+    --green: #2D5016;
+    --green-mid: #4A7C2F;
+    --green-light: #E8F0DF;
+    --orange: #C4501A;
+    --orange-light: #FDF0E8;
+    --gold: #B8860B;
+    --text: #1A1A1A;
+    --muted: #6B6B5A;
+    --line: #D4C9B0;
+    --red: #9B1B1B;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--green);
+    color: #fff;
+    padding: 18px 20px 14px;
+    text-align: center;
+    position: relative;
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.65rem;
+    letter-spacing: -0.02em;
+    margin-bottom: 2px;
+  }
+  header h1 span { opacity: 0.6; font-size: 1rem; }
+  header p {
+    font-size: 0.75rem;
+    opacity: 0.65;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* ── TAALKNOP ── */
+  #taalKnop {
+    position: absolute;
+    top: 16px; right: 14px;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    border: 1.5px solid rgba(255,255,255,0.35);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── GROTE METER ── */
+  .portemonnee {
+    background: var(--paper);
+    margin: 16px;
+    border-radius: 16px;
+    padding: 24px 20px 20px;
+    border: 1.5px solid var(--line);
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .portemonnee-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .groot-getal {
+    font-family: 'Playfair Display', serif;
+    font-size: 3.4rem;
+    font-weight: 700;
+    line-height: 1;
+    transition: color 0.4s;
+  }
+  .groot-getal.ruim   { color: var(--green); }
+  .groot-getal.krap   { color: var(--gold); }
+  .groot-getal.gevaar { color: var(--orange); }
+  .groot-getal.rood   { color: var(--red); }
+
+  .meter-bar {
+    height: 10px;
+    background: var(--line);
+    border-radius: 8px;
+    margin: 14px 0 8px;
+    overflow: hidden;
+  }
+  .meter-fill {
+    height: 100%;
+    border-radius: 8px;
+    transition: width 0.5s, background 0.4s;
+  }
+  .sub-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* ── BUTLER ── */
+  .butler {
+    margin: 0 16px 14px;
+    background: var(--green-light);
+    border-left: 4px solid var(--green-mid);
+    border-radius: 0 10px 10px 0;
+    padding: 12px 14px;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--green);
+    display: none;
+  }
+  .butler.zichtbaar { display: block; }
+  .butler.waarschuwing {
+    background: var(--orange-light);
+    border-color: var(--orange);
+    color: var(--orange);
+  }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    margin: 0 16px 0;
+    border-bottom: 2px solid var(--line);
+  }
+  .tab {
+    flex: 1;
+    padding: 10px 4px;
+    text-align: center;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .tab.actief {
+    color: var(--green);
+    border-bottom-color: var(--green);
+  }
+
+  /* ── PANELEN ── */
+  .paneel { display: none; padding: 16px; }
+  .paneel.actief { display: block; }
+
+  /* ── KAART ── */
+  .kaart {
+    background: var(--paper);
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .kaart h3 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  /* ── INVOER ── */
+  .invoer-blok { margin-bottom: 10px; }
+  .invoer-blok label {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-bottom: 4px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  .invoer-blok input {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1.5px solid var(--line);
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-appearance: none;
+  }
+  .invoer-blok input:focus {
+    outline: none;
+    border-color: var(--green-mid);
+  }
+  .invoer-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  /* Oude rij-stijl voor instellingen */
+  .rij {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: center;
+  }
+  .rij input[type="text"], .rij input[type="number"], .rij input[type="date"] {
+    flex: 1;
+    padding: 9px 11px;
+    border: 1.5px solid var(--line);
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-appearance: none;
+  }
+  .rij input:focus { outline: none; border-color: var(--green-mid); }
+  .rij input[type="number"] { max-width: 110px; text-align: right; }
+
+  /* ── KNOPPEN ── */
+  button {
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+  .btn-groen { background: var(--green); color: #fff; padding: 9px 16px; }
+  .btn-klein { background: var(--green-light); color: var(--green); padding: 9px 13px; font-size: 0.78rem; }
+  .btn-verwijder { background: none; color: var(--muted); padding: 6px 8px; font-size: 1rem; }
+  .btn-oranje { background: var(--orange); color: #fff; padding: 9px 16px; }
+  .btn-vol { width: 100%; padding: 11px; font-size: 0.88rem; }
+
+  /* ── LIJSTEN ── */
+  .post-lijst { list-style: none; }
+  .post-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.85rem;
+  }
+  .post-item:last-child { border-bottom: none; }
+  .post-naam { flex: 1; }
+  .post-datum { font-size: 0.73rem; color: var(--muted); margin-left: 8px; }
+  .post-bedrag { font-weight: 600; color: var(--red); white-space: nowrap; margin-left: 12px; }
+
+  /* ── SNELKNOPPEN ── */
+  .snelle-knoppen {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .snel-btn {
+    background: var(--paper);
+    border: 1.5px solid var(--line);
+    color: var(--text);
+    padding: 7px 12px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+  }
+
+  /* ── GEPLAND ── */
+  .gepland-item {
+    display: flex;
+    align-items: center;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.85rem;
+    gap: 8px;
+  }
+  .gepland-item:last-child { border-bottom: none; }
+  .gepland-datum-badge {
+    background: var(--green-light);
+    color: var(--green);
+    border-radius: 6px;
+    padding: 3px 7px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .gepland-datum-badge.binnenkort { background: var(--orange-light); color: var(--orange); }
+
+  /* ── TOTAALREGEL ── */
+  .totaal-regel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0 0;
+    margin-top: 4px;
+    border-top: 2px solid var(--line);
+    font-weight: 600;
+    font-size: 0.88rem;
+  }
+
+  /* ── HINT ── */
+  .hint { font-size: 0.75rem; color: var(--muted); margin: 6px 0 10px; line-height: 1.5; }
+
+  /* ── SALDO ROW ── */
+  .saldo-row { display: flex; gap: 10px; align-items: center; }
+  .saldo-row input { flex: 1; }
+
+  /* ── COPYRIGHT FOOTER ── */
+  .copyright-footer {
+    margin: 20px 16px 8px;
+    padding: 12px 14px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-size: 0.7rem;
+    color: var(--muted);
+    line-height: 1.6;
+    text-align: center;
+  }
+  .copyright-footer a { color: var(--green-mid); text-decoration: none; }
+
+  /* ── MELDING ── */
+  #melding {
+    position: fixed;
+    top: 16px; left: 50%; transform: translateX(-50%);
+    background: var(--green);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 999;
+    white-space: nowrap;
+  }
+  #melding.zichtbaar { opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Sammy <span>●</span> Jouw Financiële Regelneef</h1>
+  <p id="headerSub">Eerlijk. Gratis. Altijd bij je.</p>
+  <button id="taalKnop" onclick="wisselTaal()">🇮🇹 IT</button>
+</header>
+
+<!-- METER -->
+<div class="portemonnee">
+  <div class="portemonnee-label" id="lblVrijBesteden">Vrij te besteden</div>
+  <div class="groot-getal ruim" id="grootGetal">€ –</div>
+  <div class="meter-bar"><div class="meter-fill" id="meterFill" style="width:0%;background:var(--green)"></div></div>
+  <div class="sub-info">
+    <span>€ 0</span>
+    <span id="limietLabel">–</span>
+  </div>
+</div>
+
+<!-- BUTLER -->
+<div class="butler" id="butlerBericht"></div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab actief" onclick="toonTab('dashboard')" id="tabDashboard">📊 Stand</div>
+  <div class="tab" onclick="toonTab('uitgaven')" id="tabUitgaven">💸 Uitgaven</div>
+  <div class="tab" onclick="toonTab('gepland')" id="tabGepland">📅 Gepland</div>
+  <div class="tab" onclick="toonTab('vaste')" id="tabVaste">🏠 Vast</div>
+  <div class="tab" onclick="toonTab('instellingen')" id="tabInstellingen">⚙️</div>
+</div>
+
+<!-- PANEEL: DASHBOARD -->
+<div class="paneel actief" id="tab-dashboard">
+  <div class="kaart">
+    <h3 id="lblSnelBoeken">Snel een uitgave boeken</h3>
+    <div class="snelle-knoppen" id="snelleKnoppen"></div>
+    <div class="invoer-blok">
+      <label id="lblWatGekocht">Wat heb je gekocht?</label>
+      <input type="text" id="snelOmschrijving">
+    </div>
+    <div class="invoer-blok">
+      <label id="lblBedrag">Bedrag (€)</label>
+      <input type="number" id="snelBedrag" step="0.01" min="0">
+    </div>
+    <button class="btn-oranje btn-vol" onclick="snelBoeken()" id="btnBoekUitgave">− Boek uitgave</button>
+  </div>
+
+  <div class="kaart">
+    <h3 id="lblKomendeDagen">Vandaag & komende dagen</h3>
+    <div id="komendePlanner"><p class="hint" id="lblGeenGepland">Geen geplande activiteiten binnenkort.</p></div>
+  </div>
+
+  <div class="kaart">
+    <h3 id="lblOverzicht">Overzicht deze periode</h3>
+    <ul class="post-lijst" id="overzichtLijst"><li class="hint" id="lblGeenUitgaven">Nog geen uitgaven geboekt.</li></ul>
+  </div>
+</div>
+
+<!-- PANEEL: UITGAVEN -->
+<div class="paneel" id="tab-uitgaven">
+  <div class="kaart">
+    <h3 id="lblAlleUitgaven">Alle uitgaven deze periode</h3>
+    <ul class="post-lijst" id="uitgavenLijst"><li class="hint">–</li></ul>
+    <div class="totaal-regel">
+      <span id="lblTotaalUitgegeven">Totaal uitgegeven</span>
+      <span id="totaalUitgegeven" style="color:var(--red)">€ 0,00</span>
+    </div>
+  </div>
+  <button class="btn-klein btn-vol" onclick="periodeResetten()" style="margin-top:8px" id="btnNieuwePeriode">🔄 Nieuwe periode starten</button>
+</div>
+
+<!-- PANEEL: GEPLAND -->
+<div class="paneel" id="tab-gepland">
+  <div class="kaart">
+    <h3 id="lblGeplandeTitel">Geplande activiteiten & kosten</h3>
+    <p class="hint" id="lblGeplandHint">Voeg hier dingen toe die je nog moet betalen of doen — een verjaardag, een avondje uit, een cadeau.</p>
+    <div class="invoer-blok">
+      <label id="lblWatOmschrijving">Wat? (bv. 'Uit eten + Kaartje Sarah')</label>
+      <input type="text" id="geplandNaam">
+    </div>
+    <div class="invoer-2col">
+      <div class="invoer-blok" style="margin-bottom:0">
+        <label id="lblDatum">Datum</label>
+        <input type="date" id="geplandDatum">
+      </div>
+      <div class="invoer-blok" style="margin-bottom:0">
+        <label id="lblSchatting">Schatting (€)</label>
+        <input type="number" id="geplandBedrag" step="0.50" min="0">
+      </div>
+    </div>
+    <button class="btn-groen btn-vol" onclick="geplandToevoegen()" id="btnGeplandToevoegen" style="margin-top:4px">+ Toevoegen</button>
+    <ul class="post-lijst" id="geplandLijst" style="margin-top:12px"><li class="hint">–</li></ul>
+    <div class="totaal-regel" id="geplandTotaalRij" style="display:none">
+      <span id="lblTotaalGepland">Totaal gepland</span>
+      <span id="geplandTotaal" style="color:var(--orange)">€ 0,00</span>
+    </div>
+  </div>
+</div>
+
+<!-- PANEEL: VASTE LASTEN -->
+<div class="paneel" id="tab-vaste">
+  <div class="kaart">
+    <h3 id="lblVasteTitel">Vaste lasten (maandelijks)</h3>
+    <p class="hint" id="lblVasteHint">Huur, boodschappen, abonnementen — alles wat elke maand automatisch gaat.</p>
+    <div class="invoer-blok">
+      <label id="lblVasteOmschrijving">Omschrijving</label>
+      <input type="text" id="vasteNaam">
+    </div>
+    <div class="invoer-blok">
+      <label id="lblVasteBedrag">Bedrag per maand (€)</label>
+      <input type="number" id="vasteBedrag" step="0.50" min="0">
+    </div>
+    <button class="btn-groen btn-vol" onclick="vasteToevoegen()" id="btnVasteToevoegen">+ Toevoegen</button>
+    <ul class="post-lijst" id="vasteLijst" style="margin-top:12px"><li class="hint" id="lblGeenVaste">Nog geen vaste lasten ingevoerd.</li></ul>
+    <div class="totaal-regel" id="vasteTotaalRij" style="display:none">
+      <span id="lblTotaalVaste">Totaal vaste lasten</span>
+      <span id="vasteTotaal" style="color:var(--red)">€ 0,00</span>
+    </div>
+  </div>
+</div>
+
+<!-- PANEEL: INSTELLINGEN -->
+<div class="paneel" id="tab-instellingen">
+  <div class="kaart">
+    <h3 id="lblSaldoTitel">Huidig saldo</h3>
+    <p class="hint" id="lblSaldoHint">Lees je saldo even af in je bankapp en voer het hier in.</p>
+    <div class="saldo-row rij">
+      <input type="number" id="saldoInput" placeholder="€" step="0.01">
+      <button class="btn-groen" onclick="saldoOpslaan()" id="btnSaldoOpslaan">Opslaan</button>
+    </div>
+  </div>
+
+  <div class="kaart">
+    <h3 id="lblLimietTitel">Bestedingslimiet</h3>
+    <p class="hint" id="lblLimietHint">Het maximum vrij te besteden bedrag per periode.</p>
+    <div class="saldo-row rij">
+      <input type="number" id="limietInput" placeholder="€" step="10" min="0">
+      <button class="btn-groen" onclick="limietOpslaan()" id="btnLimietOpslaan">Opslaan</button>
+    </div>
+  </div>
+
+  <div class="kaart">
+    <h3 id="lblWaarschuwingTitel">Waarschuwingsgrens</h3>
+    <p class="hint" id="lblWaarschuwingHint">Percentage van je limiet waarbij Sammy je waarschuwt (standaard 25%).</p>
+    <div class="saldo-row rij">
+      <input type="number" id="grensInput" placeholder="%" min="5" max="50" step="5">
+      <button class="btn-groen" onclick="grensOpslaan()" id="btnGrensOpslaan">Opslaan</button>
+    </div>
+  </div>
+
+  <div class="kaart">
+    <h3 id="lblSnelknoppenTitel">Snelknoppen instellen</h3>
+    <p class="hint" id="lblSnelknoppenHint">Veelvoorkomende uitgaven voor één-tik boeking (bv. "Koffie €2,50").</p>
+    <div id="snelInstellingen"></div>
+    <div class="rij">
+      <input type="text" id="snelNaamIn" placeholder="Label">
+      <input type="number" id="snelBedragIn" placeholder="€" step="0.10" min="0.10">
+      <button class="btn-groen" onclick="snelKnopToevoegen()">+</button>
+    </div>
+  </div>
+
+  <div class="kaart" style="border-color:var(--orange)">
+    <h3 id="lblAllesWissenTitel" style="color:var(--orange)">Alles wissen</h3>
+    <p class="hint" id="lblAllesWissenHint">Verwijdert alle gegevens van dit apparaat.</p>
+    <button class="btn-oranje btn-vol" onclick="allesWissen()" id="btnAllesWissen">🗑️ Alles verwijderen</button>
+  </div>
+
+  <div class="copyright-footer">
+    © 2026 <a href="mailto:jandenhollander@duck.com">Jan den Hollander</a> ·
+    <a href="https://github.com/Jan-den-Hollander" target="_blank">github.com/Jan-den-Hollander</a><br>
+    Gratis voor iedereen · Libero per tutti · Geen reclame · Nessuna pubblicità
+  </div>
+</div>
+
+<div id="melding"></div>
+
+<script>
+// ════════════════════════════════════════
+//  VERTALINGEN
+// ════════════════════════════════════════
+const T = {
+  nl: {
+    headerSub: 'Eerlijk. Gratis. Altijd bij je.',
+    taalKnop: '🇮🇹 IT',
+    lblVrijBesteden: 'Vrij te besteden',
+    tabDashboard: '📊 Stand',
+    tabUitgaven: '💸 Uitgaven',
+    tabGepland: '📅 Gepland',
+    tabVaste: '🏠 Vast',
+    lblSnelBoeken: 'Snel een uitgave boeken',
+    lblWatGekocht: 'Wat heb je gekocht?',
+    lblBedrag: 'Bedrag (€)',
+    btnBoekUitgave: '− Boek uitgave',
+    lblKomendeDagen: 'Vandaag & komende dagen',
+    lblGeenGepland: 'Geen geplande activiteiten binnenkort.',
+    lblOverzicht: 'Overzicht deze periode',
+    lblGeenUitgaven: 'Nog geen uitgaven geboekt.',
+    lblAlleUitgaven: 'Alle uitgaven deze periode',
+    lblTotaalUitgegeven: 'Totaal uitgegeven',
+    btnNieuwePeriode: '🔄 Nieuwe periode starten',
+    lblGeplandeTitel: 'Geplande activiteiten & kosten',
+    lblGeplandHint: 'Voeg hier dingen toe die je nog moet betalen of doen — een verjaardag, een avondje uit, een cadeau.',
+    lblWatOmschrijving: "Wat? (bv. 'Uit eten + Kaartje Sarah')",
+    lblDatum: 'Datum',
+    lblSchatting: 'Schatting (€)',
+    btnGeplandToevoegen: '+ Toevoegen',
+    lblTotaalGepland: 'Totaal gepland',
+    lblVasteTitel: 'Vaste lasten (maandelijks)',
+    lblVasteHint: 'Huur, boodschappen, abonnementen — alles wat elke maand automatisch gaat.',
+    lblVasteOmschrijving: 'Omschrijving',
+    lblVasteBedrag: 'Bedrag per maand (€)',
+    btnVasteToevoegen: '+ Toevoegen',
+    lblGeenVaste: 'Nog geen vaste lasten ingevoerd.',
+    lblTotaalVaste: 'Totaal vaste lasten',
+    lblSaldoTitel: 'Huidig saldo',
+    lblSaldoHint: 'Lees je saldo even af in je bankapp en voer het hier in.',
+    btnSaldoOpslaan: 'Opslaan',
+    lblLimietTitel: 'Bestedingslimiet',
+    lblLimietHint: 'Het maximum vrij te besteden bedrag per periode.',
+    btnLimietOpslaan: 'Opslaan',
+    lblWaarschuwingTitel: 'Waarschuwingsgrens',
+    lblWaarschuwingHint: "Percentage van je limiet waarbij Sammy je waarschuwt (standaard 25%).",
+    btnGrensOpslaan: 'Opslaan',
+    lblSnelknoppenTitel: 'Snelknoppen instellen',
+    lblSnelknoppenHint: 'Veelvoorkomende uitgaven voor één-tik boeking (bv. "Koffie €2,50").',
+    lblAllesWissenTitel: 'Alles wissen',
+    lblAllesWissenHint: 'Verwijdert alle gegevens van dit apparaat.',
+    btnAllesWissen: '🗑️ Alles verwijderen',
+    limietLabel_geen: 'Saldo instellen →',
+    limietLabel_geen_limiet: 'Geen limiet ingesteld',
+    limietLabel_prefix: 'Limiet: €',
+    bezig: 'Goed bezig',
+    pct_over: '% van je budget is nog beschikbaar.',
+    rood_tekst: '⛔ Je zit € {X} boven je budget. Tijd om op de rem te trappen.',
+    krap_tekst: '⚠️ Nog maar {P}% over van je budget — € {X}. Rustig aan.',
+    gepland_vandaag: 'vandaag',
+    gepland_morgen: 'morgen',
+    gepland_over: 'over {D} dagen',
+    gepland_ok: 'Dat lukt — je hebt genoeg vrij.',
+    gepland_tekort: '⚠️ Je hebt dan waarschijnlijk te weinig vrij!',
+    badge_vandaag: 'Vandaag!',
+    badge_morgen: 'Morgen',
+    badge_over: 'Over {D} dagen',
+    melding_vul_naam_bedrag: 'Vul naam en bedrag in',
+    melding_vast_opgeslagen: 'Vaste last opgeslagen',
+    melding_vul_naam_datum: 'Vul tenminste naam en datum in',
+    melding_gepland_toegevoegd: 'Gepland toegevoegd',
+    melding_vul_omschrijving: 'Vul omschrijving en bedrag in',
+    melding_saldo_bijgewerkt: 'Saldo bijgewerkt',
+    melding_limiet_opgeslagen: 'Limiet opgeslagen',
+    melding_grens_ingesteld: 'Waarschuwing bij {V}% ingesteld',
+    melding_snelknop: 'Snelknop toegevoegd',
+    melding_voer_geldig: 'Voer een geldig bedrag in',
+    melding_getal_fout: 'Voer een getal tussen 5 en 50 in',
+    melding_naam_bedrag_snelknop: 'Naam en bedrag verplicht',
+    confirm_periode: 'Weet je zeker dat je alle uitgaven van deze periode wist? Je instellingen blijven bewaard.',
+    confirm_alles: 'Alles verwijderen? Dit kan niet ongedaan worden gemaakt.',
+    melding_nieuwe_periode: 'Nieuwe periode gestart',
+    geen_activiteiten: 'Geen geplande activiteiten de komende 2 weken.',
+    snelknoppen_hint: 'Voeg snelknoppen toe via ⚙️ Instellingen.',
+    gepland_leeg: 'Nog niets gepland.',
+    vaste_leeg: 'Nog geen vaste lasten ingevoerd.',
+    uitgaven_leeg: 'Nog geen uitgaven.',
+  },
+  it: {
+    headerSub: 'Il tuo consulente finanziari.Onesto. Gratuito. Sempre con te.',
+    taalKnop: '🇳🇱 NL',
+    lblVrijBesteden: 'Disponibile da spendere',
+    tabDashboard: '📊 Stato',
+    tabUitgaven: '💸 Spese',
+    tabGepland: '📅 Pianificato',
+    tabVaste: '🏠 Fisso',
+    lblSnelBoeken: 'Registra una spesa veloce',
+    lblWatGekocht: 'Cosa hai comprato?',
+    lblBedrag: 'Importo (€)',
+    btnBoekUitgave: '− Registra spesa',
+    lblKomendeDagen: 'Oggi & prossimi giorni',
+    lblGeenGepland: 'Nessuna attività pianificata a breve.',
+    lblOverzicht: 'Panoramica di questo periodo',
+    lblGeenUitgaven: 'Nessuna spesa registrata.',
+    lblAlleUitgaven: 'Tutte le spese del periodo',
+    lblTotaalUitgegeven: 'Totale speso',
+    btnNieuwePeriode: '🔄 Inizia nuovo periodo',
+    lblGeplandeTitel: 'Attività e costi pianificati',
+    lblGeplandHint: "Aggiungi cose da pagare o fare — un compleanno, una serata fuori, un regalo.",
+    lblWatOmschrijving: "Cosa? (es. 'Cena + Regalo Sara')",
+    lblDatum: 'Data',
+    lblSchatting: 'Stima (€)',
+    btnGeplandToevoegen: '+ Aggiungi',
+    lblTotaalGepland: 'Totale pianificato',
+    lblVasteTitel: 'Spese fisse (mensili)',
+    lblVasteHint: 'Affitto, spesa, abbonamenti — tutto ciò che va in automatico ogni mese.',
+    lblVasteOmschrijving: 'Descrizione',
+    lblVasteBedrag: 'Importo mensile (€)',
+    btnVasteToevoegen: '+ Aggiungi',
+    lblGeenVaste: 'Nessuna spesa fissa inserita.',
+    lblTotaalVaste: 'Totale spese fisse',
+    lblSaldoTitel: 'Saldo attuale',
+    lblSaldoHint: 'Leggi il tuo saldo dalla app bancaria e inseriscilo qui.',
+    btnSaldoOpslaan: 'Salva',
+    lblLimietTitel: 'Limite di spesa',
+    lblLimietHint: "L'importo massimo da spendere liberamente per periodo.",
+    btnLimietOpslaan: 'Salva',
+    lblWaarschuwingTitel: 'Soglia di avviso',
+    lblWaarschuwingHint: "Percentuale del limite a cui Sammy ti avvisa (predefinito 25%).",
+    btnGrensOpslaan: 'Salva',
+    lblSnelknoppenTitel: 'Imposta pulsanti rapidi',
+    lblSnelknoppenHint: 'Spese frequenti con un solo tocco (es. "Caffè €1,50").',
+    lblAllesWissenTitel: 'Cancella tutto',
+    lblAllesWissenHint: 'Elimina tutti i dati da questo dispositivo.',
+    btnAllesWissen: '🗑️ Elimina tutto',
+    limietLabel_geen: 'Imposta saldo →',
+    limietLabel_geen_limiet: 'Nessun limite impostato',
+    limietLabel_prefix: 'Limite: €',
+    bezig: 'Ben fatto',
+    pct_over: '% del tuo budget è ancora disponibile.',
+    rood_tekst: '⛔ Hai superato il budget di € {X}. È ora di frenare.',
+    krap_tekst: '⚠️ Solo {P}% rimasto — € {X}. Vai piano.',
+    gepland_vandaag: 'oggi',
+    gepland_morgen: 'domani',
+    gepland_over: 'tra {D} giorni',
+    gepland_ok: 'Ce la fai — hai abbastanza disponibile.',
+    gepland_tekort: '⚠️ Probabilmente non avrai abbastanza!',
+    badge_vandaag: 'Oggi!',
+    badge_morgen: 'Domani',
+    badge_over: 'Tra {D} giorni',
+    melding_vul_naam_bedrag: 'Inserisci nome e importo',
+    melding_vast_opgeslagen: 'Spesa fissa salvata',
+    melding_vul_naam_datum: 'Inserisci almeno nome e data',
+    melding_gepland_toegevoegd: 'Aggiunto ai pianificati',
+    melding_vul_omschrijving: 'Inserisci descrizione e importo',
+    melding_saldo_bijgewerkt: 'Saldo aggiornato',
+    melding_limiet_opgeslagen: 'Limite salvato',
+    melding_grens_ingesteld: 'Avviso al {V}% impostato',
+    melding_snelknop: 'Pulsante rapido aggiunto',
+    melding_voer_geldig: 'Inserisci un importo valido',
+    melding_getal_fout: 'Inserisci un numero tra 5 e 50',
+    melding_naam_bedrag_snelknop: 'Nome e importo obbligatori',
+    confirm_periode: 'Vuoi davvero cancellare tutte le spese di questo periodo? Le impostazioni verranno mantenute.',
+    confirm_alles: 'Eliminare tutto? Questa azione non può essere annullata.',
+    melding_nieuwe_periode: 'Nuovo periodo avviato',
+    geen_activiteiten: 'Nessuna attività pianificata nelle prossime 2 settimane.',
+    snelknoppen_hint: 'Aggiungi pulsanti rapidi nelle ⚙️ Impostazioni.',
+    gepland_leeg: 'Niente pianificato.',
+    vaste_leeg: 'Nessuna spesa fissa inserita.',
+    uitgaven_leeg: 'Nessuna spesa.',
+  }
+};
+
+let taal = localStorage.getItem('sammy_taal') || 'nl';
+
+function t(key, vars) {
+  let s = T[taal][key] || T['nl'][key] || key;
+  if (vars) Object.keys(vars).forEach(k => s = s.replace('{'+k+'}', vars[k]));
+  return s;
+}
+
+function wisselTaal() {
+  taal = taal === 'nl' ? 'it' : 'nl';
+  localStorage.setItem('sammy_taal', taal);
+  pasTaalToe();
+  teken();
+}
+
+function pasTaalToe() {
+  const ids = [
+    'headerSub','taalKnop','lblVrijBesteden',
+    'tabDashboard','tabUitgaven','tabGepland','tabVaste',
+    'lblSnelBoeken','lblWatGekocht','lblBedrag','btnBoekUitgave',
+    'lblKomendeDagen','lblGeenGepland','lblOverzicht','lblGeenUitgaven',
+    'lblAlleUitgaven','lblTotaalUitgegeven','btnNieuwePeriode',
+    'lblGeplandeTitel','lblGeplandHint','lblWatOmschrijving','lblDatum','lblSchatting','btnGeplandToevoegen','lblTotaalGepland',
+    'lblVasteTitel','lblVasteHint','lblVasteOmschrijving','lblVasteBedrag','btnVasteToevoegen','lblGeenVaste','lblTotaalVaste',
+    'lblSaldoTitel','lblSaldoHint','btnSaldoOpslaan',
+    'lblLimietTitel','lblLimietHint','btnLimietOpslaan',
+    'lblWaarschuwingTitel','lblWaarschuwingHint','btnGrensOpslaan',
+    'lblSnelknoppenTitel','lblSnelknoppenHint',
+    'lblAllesWissenTitel','lblAllesWissenHint','btnAllesWissen',
+  ];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = t(id);
+  });
+  document.documentElement.lang = taal;
+}
+
+// ════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════
+let staat = {
+  saldo: null,
+  limiet: null,
+  grens: 25,
+  vasteLasten: [],
+  geplande: [],
+  uitgaven: [],
+  snelKnoppen: []
+};
+
+function laad() {
+  const op = localStorage.getItem('regelneef_v2');
+  if (op) try { staat = { ...staat, ...JSON.parse(op) }; } catch(e) {}
+  if (staat.limiet !== null) document.getElementById('limietInput').value = staat.limiet;
+  if (staat.saldo !== null) document.getElementById('saldoInput').value = staat.saldo;
+  document.getElementById('grensInput').value = staat.grens;
+}
+function sla() { localStorage.setItem('regelneef_v2', JSON.stringify(staat)); }
+
+// ════════════════════════════════════════
+//  TABS
+// ════════════════════════════════════════
+function toonTab(naam) {
+  document.querySelectorAll('.paneel').forEach(p => p.classList.remove('actief'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('actief'));
+  document.getElementById('tab-' + naam).classList.add('actief');
+  const tabMap = ['dashboard','uitgaven','gepland','vaste','instellingen'];
+  document.querySelectorAll('.tab')[tabMap.indexOf(naam)].classList.add('actief');
+  teken();
+}
+
+// ════════════════════════════════════════
+//  BEREKENINGEN
+// ════════════════════════════════════════
+function berekenVrij() {
+  if (staat.saldo === null) return null;
+  return staat.saldo - staat.uitgaven.reduce((s,u) => s + u.bedrag, 0);
+}
+function berekenVastTotaal() { return staat.vasteLasten.reduce((s,v) => s + v.bedrag, 0); }
+function berekenGeplandTotaal() {
+  const nu = new Date();
+  return staat.geplande.filter(g => new Date(g.datum) >= nu).reduce((s,g) => s + g.bedrag, 0);
+}
+function dagTot(datumStr) {
+  const nu = new Date(); nu.setHours(0,0,0,0);
+  const d = new Date(datumStr); d.setHours(0,0,0,0);
+  return Math.round((d - nu) / 86400000);
+}
+
+// ════════════════════════════════════════
+//  BUTLER
+// ════════════════════════════════════════
+function butlerUpdate(vrij, pct) {
+  const el = document.getElementById('butlerBericht');
+  const binnenkort = staat.geplande.filter(g => { const d = dagTot(g.datum); return d >= 0 && d <= 7; });
+  let tekst = '', waarschuwing = false;
+  if (vrij === null) { el.classList.remove('zichtbaar','waarschuwing'); return; }
+  if (vrij < 0) {
+    tekst = t('rood_tekst', {X: Math.abs(vrij).toFixed(2).replace('.',',')});
+    waarschuwing = true;
+  } else if (pct <= staat.grens && staat.limiet) {
+    tekst = t('krap_tekst', {P: pct, X: vrij.toFixed(2).replace('.',',')});
+    waarschuwing = true;
+  } else if (binnenkort.length > 0) {
+    const g = binnenkort[0];
+    const d = dagTot(g.datum);
+    const dLabel = d === 0 ? t('gepland_vandaag') : d === 1 ? t('gepland_morgen') : t('gepland_over', {D: d});
+    tekst = `📅 ${g.naam} ${dLabel} (€ ${g.bedrag.toFixed(2).replace('.',',')}). `;
+    tekst += vrij >= g.bedrag ? t('gepland_ok') : (waarschuwing=true, t('gepland_tekort'));
+  } else if (staat.limiet && pct > 60) {
+    tekst = `✅ ${t('bezig')} — ${pct}% ${t('pct_over')}`;
+  }
+  if (tekst) {
+    el.textContent = tekst;
+    el.classList.add('zichtbaar');
+    waarschuwing ? el.classList.add('waarschuwing') : el.classList.remove('waarschuwing');
+  } else {
+    el.classList.remove('zichtbaar','waarschuwing');
+  }
+}
+
+// ════════════════════════════════════════
+//  TEKEN
+// ════════════════════════════════════════
+function teken() {
+  const vrij = berekenVrij();
+  const gg = document.getElementById('grootGetal');
+  const mf = document.getElementById('meterFill');
+  const ll = document.getElementById('limietLabel');
+  if (vrij === null) {
+    gg.textContent = '€ –'; gg.className = 'groot-getal';
+    mf.style.width = '0%'; ll.textContent = t('limietLabel_geen');
+  } else {
+    gg.textContent = '€ ' + vrij.toFixed(2).replace('.', ',');
+    let pct = 100;
+    if (staat.limiet && staat.limiet > 0) {
+      pct = Math.max(0, Math.round((vrij / staat.limiet) * 100));
+      ll.textContent = t('limietLabel_prefix') + staat.limiet.toFixed(0);
+    } else { ll.textContent = t('limietLabel_geen_limiet'); }
+    mf.style.width = Math.min(pct,100) + '%';
+    let kleur, css;
+    if (vrij < 0) { kleur='rood'; css='var(--red)'; }
+    else if (pct <= staat.grens) { kleur='gevaar'; css='var(--orange)'; }
+    else if (pct <= 50) { kleur='krap'; css='var(--gold)'; }
+    else { kleur='ruim'; css='var(--green)'; }
+    gg.className = 'groot-getal ' + kleur;
+    mf.style.background = css;
+    butlerUpdate(vrij, pct);
+  }
+  tekenVaste(); tekenGepland(); tekenUitgaven(); tekenSnelKnoppen(); tekenKomend();
+}
+
+// ════════════════════════════════════════
+//  VASTE LASTEN
+// ════════════════════════════════════════
+function vasteToevoegen() {
+  const naam = document.getElementById('vasteNaam').value.trim();
+  const bedrag = parseFloat(document.getElementById('vasteBedrag').value);
+  if (!naam || !bedrag || bedrag <= 0) { toonMelding(t('melding_vul_naam_bedrag')); return; }
+  staat.vasteLasten.push({ id: Date.now(), naam, bedrag });
+  document.getElementById('vasteNaam').value = '';
+  document.getElementById('vasteBedrag').value = '';
+  sla(); teken(); toonMelding(t('melding_vast_opgeslagen'));
+}
+function tekenVaste() {
+  const ul = document.getElementById('vasteLijst');
+  const totaalRij = document.getElementById('vasteTotaalRij');
+  if (!staat.vasteLasten.length) {
+    ul.innerHTML = `<li class="hint">${t('vaste_leeg')}</li>`;
+    totaalRij.style.display = 'none'; return;
+  }
+  totaalRij.style.display = 'flex';
+  ul.innerHTML = staat.vasteLasten.map(v =>
+    `<li class="post-item"><span class="post-naam">${v.naam}</span>
+    <span class="post-bedrag">− € ${v.bedrag.toFixed(2).replace('.',',')}</span>
+    <button class="btn-verwijder" onclick="vasteVerwijder(${v.id})">✕</button></li>`
+  ).join('');
+  document.getElementById('vasteTotaal').textContent = '− € ' + berekenVastTotaal().toFixed(2).replace('.',',');
+}
+function vasteVerwijder(id) { staat.vasteLasten = staat.vasteLasten.filter(v => v.id !== id); sla(); teken(); }
+
+// ════════════════════════════════════════
+//  GEPLAND
+// ════════════════════════════════════════
+function geplandToevoegen() {
+  const naam = document.getElementById('geplandNaam').value.trim();
+  const datum = document.getElementById('geplandDatum').value;
+  const bedrag = parseFloat(document.getElementById('geplandBedrag').value) || 0;
+  if (!naam || !datum) { toonMelding(t('melding_vul_naam_datum')); return; }
+  staat.geplande.push({ id: Date.now(), naam, datum, bedrag });
+  staat.geplande.sort((a,b) => a.datum.localeCompare(b.datum));
+  document.getElementById('geplandNaam').value = '';
+  document.getElementById('geplandDatum').value = '';
+  document.getElementById('geplandBedrag').value = '';
+  sla(); teken(); toonMelding(t('melding_gepland_toegevoegd'));
+}
+function tekenGepland() {
+  const ul = document.getElementById('geplandLijst');
+  const totaalRij = document.getElementById('geplandTotaalRij');
+  const toekomstig = staat.geplande.filter(g => dagTot(g.datum) >= 0);
+  if (!toekomstig.length) {
+    ul.innerHTML = `<li class="hint">${t('gepland_leeg')}</li>`;
+    totaalRij.style.display = 'none'; return;
+  }
+  totaalRij.style.display = 'flex';
+  ul.innerHTML = toekomstig.map(g => {
+    const d = dagTot(g.datum);
+    const label = d===0 ? t('badge_vandaag') : d===1 ? t('badge_morgen') : t('badge_over',{D:d}).replace('Over ','').replace('Tra ','');
+    return `<li class="gepland-item">
+      <span class="gepland-datum-badge ${d<=3?'binnenkort':''}">📅 ${label}</span>
+      <span style="flex:1;margin-left:8px;font-size:0.85rem">${g.naam}</span>
+      ${g.bedrag ? `<span style="font-size:0.82rem;color:var(--orange);font-weight:600">€ ${g.bedrag.toFixed(2).replace('.',',')}</span>` : ''}
+      <button class="btn-verwijder" onclick="geplandVerwijder(${g.id})">✕</button>
+    </li>`;
+  }).join('');
+  document.getElementById('geplandTotaal').textContent = '≈ € ' + berekenGeplandTotaal().toFixed(2).replace('.',',');
+}
+function geplandVerwijder(id) { staat.geplande = staat.geplande.filter(g => g.id !== id); sla(); teken(); }
+
+function tekenKomend() {
+  const el = document.getElementById('komendePlanner');
+  const bs = staat.geplande.filter(g => { const d = dagTot(g.datum); return d >= 0 && d <= 14; });
+  if (!bs.length) { el.innerHTML = `<p class="hint">${t('geen_activiteiten')}</p>`; return; }
+  const vrij = berekenVrij();
+  el.innerHTML = bs.map(g => {
+    const d = dagTot(g.datum);
+    const label = d===0 ? t('badge_vandaag') : d===1 ? t('badge_morgen') : t('badge_over',{D:d});
+    const genoeg = vrij !== null && vrij >= g.bedrag;
+    return `<div class="gepland-item">
+      <span class="gepland-datum-badge ${d<=2?'binnenkort':''}">${label}</span>
+      <span style="flex:1;margin-left:8px;font-size:0.85rem">${g.naam}</span>
+      ${g.bedrag ? `<span style="color:${genoeg?'var(--green-mid)':'var(--red)'};font-size:0.78rem;font-weight:600">€ ${g.bedrag.toFixed(2).replace('.',',')}</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════
+//  UITGAVEN
+// ════════════════════════════════════════
+function snelBoeken() {
+  const naam = document.getElementById('snelOmschrijving').value.trim();
+  const bedrag = parseFloat(document.getElementById('snelBedrag').value);
+  if (!naam || !bedrag || bedrag <= 0) { toonMelding(t('melding_vul_omschrijving')); return; }
+  staat.uitgaven.push({ id: Date.now(), naam, bedrag, datum: new Date().toISOString() });
+  document.getElementById('snelOmschrijving').value = '';
+  document.getElementById('snelBedrag').value = '';
+  sla(); teken(); toonMelding(`− € ${bedrag.toFixed(2).replace('.',',')}`);
+}
+function tekenUitgaven() {
+  const ul = document.getElementById('uitgavenLijst');
+  const ov = document.getElementById('overzichtLijst');
+  const totEl = document.getElementById('totaalUitgegeven');
+  if (!staat.uitgaven.length) {
+    ul.innerHTML = `<li class="hint">${t('uitgaven_leeg')}</li>`;
+    ov.innerHTML = `<li class="hint">${t('lblGeenUitgaven')}</li>`;
+    totEl.textContent = '€ 0,00'; return;
+  }
+  const gs = [...staat.uitgaven].reverse();
+  const rij = u => {
+    const d = new Date(u.datum);
+    const ds = d.toLocaleDateString(taal === 'it' ? 'it-IT' : 'nl-NL', {day:'numeric',month:'short'});
+    return `<li class="post-item"><span class="post-naam">${u.naam}</span>
+      <span class="post-datum">${ds}</span>
+      <span class="post-bedrag">− € ${u.bedrag.toFixed(2).replace('.',',')}</span>
+      <button class="btn-verwijder" onclick="uitgaveVerwijder(${u.id})">✕</button></li>`;
+  };
+  ul.innerHTML = gs.map(rij).join('');
+  ov.innerHTML = gs.slice(0,5).map(rij).join('');
+  totEl.textContent = '− € ' + staat.uitgaven.reduce((s,u)=>s+u.bedrag,0).toFixed(2).replace('.',',');
+}
+function uitgaveVerwijder(id) { staat.uitgaven = staat.uitgaven.filter(u => u.id !== id); sla(); teken(); }
+function periodeResetten() {
+  if (!confirm(t('confirm_periode'))) return;
+  staat.uitgaven = []; sla(); teken(); toonMelding(t('melding_nieuwe_periode'));
+}
+
+// ════════════════════════════════════════
+//  SNELKNOPPEN
+// ════════════════════════════════════════
+function snelKnopToevoegen() {
+  const naam = document.getElementById('snelNaamIn').value.trim();
+  const bedrag = parseFloat(document.getElementById('snelBedragIn').value);
+  if (!naam || !bedrag) { toonMelding(t('melding_naam_bedrag_snelknop')); return; }
+  staat.snelKnoppen.push({ id: Date.now(), naam, bedrag });
+  document.getElementById('snelNaamIn').value = '';
+  document.getElementById('snelBedragIn').value = '';
+  sla(); tekenSnelKnoppen(); toonMelding(t('melding_snelknop'));
+}
+function tekenSnelKnoppen() {
+  const sk = document.getElementById('snelleKnoppen');
+  sk.innerHTML = staat.snelKnoppen.length
+    ? staat.snelKnoppen.map(k => `<button class="snel-btn" onclick="snelDirect(${k.id})">${k.naam} € ${k.bedrag.toFixed(2).replace('.',',')}</button>`).join('')
+    : `<span class="hint" style="font-size:0.75rem">${t('snelknoppen_hint')}</span>`;
+  document.getElementById('snelInstellingen').innerHTML = staat.snelKnoppen.map(k =>
+    `<div class="rij"><span style="flex:1;font-size:0.85rem">${k.naam} — € ${k.bedrag.toFixed(2).replace('.',',')}</span>
+    <button class="btn-verwijder" onclick="snelVerwijder(${k.id})">✕</button></div>`
+  ).join('');
+}
+function snelDirect(id) {
+  const k = staat.snelKnoppen.find(k => k.id === id);
+  if (!k) return;
+  staat.uitgaven.push({ id: Date.now(), naam: k.naam, bedrag: k.bedrag, datum: new Date().toISOString() });
+  sla(); teken(); toonMelding(`− € ${k.bedrag.toFixed(2).replace('.',',')} (${k.naam})`);
+}
+function snelVerwijder(id) { staat.snelKnoppen = staat.snelKnoppen.filter(k => k.id !== id); sla(); tekenSnelKnoppen(); }
+
+// ════════════════════════════════════════
+//  INSTELLINGEN
+// ════════════════════════════════════════
+function saldoOpslaan() {
+  const val = parseFloat(document.getElementById('saldoInput').value);
+  if (isNaN(val)) { toonMelding(t('melding_voer_geldig')); return; }
+  staat.saldo = val; sla(); teken(); toonMelding(t('melding_saldo_bijgewerkt'));
+}
+function limietOpslaan() {
+  const val = parseFloat(document.getElementById('limietInput').value);
+  if (isNaN(val) || val <= 0) { toonMelding(t('melding_voer_geldig')); return; }
+  staat.limiet = val; sla(); teken(); toonMelding(t('melding_limiet_opgeslagen'));
+}
+function grensOpslaan() {
+  const val = parseInt(document.getElementById('grensInput').value);
+  if (isNaN(val) || val < 5 || val > 50) { toonMelding(t('melding_getal_fout')); return; }
+  staat.grens = val; sla(); teken(); toonMelding(t('melding_grens_ingesteld', {V: val}));
+}
+function allesWissen() {
+  if (!confirm(t('confirm_alles'))) return;
+  localStorage.removeItem('regelneef_v2');
+  location.reload();
+}
+
+// ════════════════════════════════════════
+//  MELDING
+// ════════════════════════════════════════
+function toonMelding(tekst) {
+  const m = document.getElementById('melding');
+  m.textContent = tekst;
+  m.classList.add('zichtbaar');
+  setTimeout(() => m.classList.remove('zichtbaar'), 2200);
+}
+
+// ════════════════════════════════════════
+//  START
+// ════════════════════════════════════════
+laad();
+pasTaalToe();
+teken();
+document.getElementById('geplandDatum').valueAsDate = new Date();
+</script>
+</body>
+</html>
