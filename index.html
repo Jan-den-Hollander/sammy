@@ -1494,65 +1494,56 @@ function ttsStart() {
   if (knop) { knop.classList.add('actief'); knop.textContent = '⏹️'; }
   toonMelding(t('tts_aan'));
 
-  // Knip op zinsgrenzen, groepeer tot blokken van max 500 tekens
-  const MAX_BLOK = 500;
+  // Splits op zinsgrenzen, max 200 tekens per blok
+  // Korte blokken = Android loopt nooit vast, geen keep-alive nodig
+  const MAX_BLOK = 200;
   const blokken = [];
   const zinnen = tekst.match(/[^.!?\n]+[.!?\n]*/g) || [tekst];
   let huidigBlok = '';
   for (const zin of zinnen) {
-    if ((huidigBlok + zin).length > MAX_BLOK && huidigBlok) {
+    const s = zin.trim();
+    if (!s) continue;
+    if ((huidigBlok + ' ' + s).length > MAX_BLOK && huidigBlok) {
       blokken.push(huidigBlok.trim());
-      huidigBlok = zin;
+      huidigBlok = s;
     } else {
-      huidigBlok += zin;
+      huidigBlok += (huidigBlok ? ' ' : '') + s;
     }
   }
   if (huidigBlok.trim()) blokken.push(huidigBlok.trim());
 
   let blokIndex = 0;
-  let androidTimer = null;
 
   function spreekBlok() {
-    if (!ttsActief || blokIndex >= blokken.length) {
-      ttsStop(); return;
-    }
+    if (!ttsActief) return;
+    if (blokIndex >= blokken.length) { ttsStop(); return; }
 
     const utt = new SpeechSynthesisUtterance(blokken[blokIndex]);
     utt.lang  = t('tts_taal');
     utt.rate  = 0.92;
     utt.pitch = 1.0;
 
-    utt.onstart = () => {
-      clearInterval(androidTimer);
-      androidTimer = setInterval(() => {
-        if (!ttsActief) { clearInterval(androidTimer); return; }
-        if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
-          window.speechSynthesis.pause();
-          window.speechSynthesis.resume();
-        }
-      }, 10000);
-    };
-
     utt.onend = () => {
-      clearInterval(androidTimer);
       blokIndex++;
-      setTimeout(spreekBlok, 80);
+      // Kleine pauze zodat Android de synthesizer kan resetten
+      setTimeout(spreekBlok, 50);
     };
 
     utt.onerror = (e) => {
-      clearInterval(androidTimer);
-      if (e.error !== 'interrupted') {
-        blokIndex++;
-        setTimeout(spreekBlok, 80);
-      }
+      // 'interrupted' = wij hebben zelf cancel() aangeroepen → stoppen
+      if (e.error === 'interrupted' || !ttsActief) return;
+      // Andere fout: blok overslaan en doorgaan
+      blokIndex++;
+      setTimeout(spreekBlok, 50);
     };
 
     window.speechSynthesis.speak(utt);
   }
 
-  // Cicerone-aanpak: cancel, kleine pauze, dan resume + eerste blok
+  // Android: cancel + 100ms + resume, dan starten
   window.speechSynthesis.cancel();
   setTimeout(() => {
+    if (!ttsActief) return;
     window.speechSynthesis.resume();
     spreekBlok();
   }, 100);
