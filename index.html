@@ -302,8 +302,9 @@
     cursor: pointer;
     z-index: 9000;
     display: flex; align-items: center; justify-content: center;
-    transition: background 0.2s, transform 0.15s;
+    transition: background 0.2s, transform 0.15s, opacity 0.2s;
   }
+  #ttsKnop.uit { background: var(--line); color: var(--muted); box-shadow: none; }
   #ttsKnop.actief { background: var(--orange); transform: scale(1.1); }
   #ttsKnop:active { transform: scale(0.95); }
 
@@ -1035,6 +1036,7 @@ function sla() { localStorage.setItem('regelneef_v2', JSON.stringify(staat)); }
 //  TABS
 // ════════════════════════════════════════════════════════
 function toonTab(naam) {
+  if (typeof ttsStop === 'function') ttsStop();
   document.querySelectorAll('.paneel').forEach(p => p.classList.remove('actief'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('actief'));
   document.getElementById('tab-' + naam).classList.add('actief');
@@ -1430,50 +1432,77 @@ function toonMelding(tekst) {
 //  TTS — TEKST-NAAR-SPRAAK (geen API, ingebouwde browser)
 // ════════════════════════════════════════════════════════
 let ttsActief = false;
+let ttsIngeschakeld = localStorage.getItem('sammy_tts') === 'aan';
+
+function ttsToggle() {
+  ttsIngeschakeld = !ttsIngeschakeld;
+  localStorage.setItem('sammy_tts', ttsIngeschakeld ? 'aan' : 'uit');
+  if (!ttsIngeschakeld) ttsStop();
+  ttsUpdateUI();
+}
+
+function ttsUpdateUI() {
+  const knop = document.getElementById('ttsKnop');
+  const wrap = document.getElementById('ttsToggleWrap');
+  const ball = document.getElementById('ttsToggleBall');
+  // Knop altijd zichtbaar: groen als aan, grijs als uit
+  if (knop) {
+    knop.style.display = 'flex';
+    knop.title = ttsIngeschakeld
+      ? (taal === 'it' ? 'Leggi ad alta voce' : 'Voorlezen')
+      : (taal === 'it' ? 'Lettura disattivata — attiva in Impostazioni' : 'Voorlezen uitgeschakeld — zet aan via Instellingen');
+    if (ttsIngeschakeld) {
+      knop.classList.remove('uit');
+    } else {
+      knop.classList.add('uit');
+      knop.textContent = '🔇';
+    }
+  }
+  if (wrap) wrap.style.background = ttsIngeschakeld ? 'var(--green)' : 'var(--line)';
+  if (ball) ball.style.left = ttsIngeschakeld ? '25px' : '3px';
+}
 
 function ttsWisselAfspelen() {
-  if (ttsActief) {
-    ttsStop();
-  } else {
-    ttsStart();
+  if (!ttsIngeschakeld) {
+    toonMelding(taal === 'it'
+      ? '🔇 Attiva la lettura in ⚙️ Impostazioni'
+      : '🔇 Zet voorlezen aan via ⚙️ Instellingen');
+    return;
   }
+  if (ttsActief) { ttsStop(); } else { ttsStart(); }
 }
 
 function ttsStop() {
   window.speechSynthesis.cancel();
   ttsActief = false;
-  document.getElementById('ttsKnop').classList.remove('actief');
-  document.getElementById('ttsKnop').textContent = '🔊';
+  const knop = document.getElementById('ttsKnop');
+  if (knop) {
+    knop.classList.remove('actief');
+    knop.textContent = ttsIngeschakeld ? '🔊' : '🔇';
+  }
 }
 
 function ttsStart() {
+  if (!ttsIngeschakeld) return;
   window.speechSynthesis.cancel();
 
   const tekst = ttsVerzamelTekst();
-  if (!tekst) {
-    toonMelding(t('tts_geen'));
-    return;
-  }
+  if (!tekst) { toonMelding(t('tts_geen')); return; }
 
-  // Splits lange tekst in zinnen voor betere uitspraak op Android
   const zinnen = tekst.match(/[^.!?]+[.!?]+/g) || [tekst];
-
   let index = 0;
   ttsActief = true;
-  document.getElementById('ttsKnop').classList.add('actief');
-  document.getElementById('ttsKnop').textContent = '⏹️';
+  const knop = document.getElementById('ttsKnop');
+  if (knop) { knop.classList.add('actief'); knop.textContent = '⏹️'; }
   toonMelding(t('tts_aan'));
 
   function spreekVolgende() {
-    if (!ttsActief || index >= zinnen.length) {
-      ttsStop();
-      return;
-    }
+    if (!ttsActief || index >= zinnen.length) { ttsStop(); return; }
     const utt = new SpeechSynthesisUtterance(zinnen[index].trim());
-    utt.lang = t('tts_taal');
-    utt.rate = 0.92;
+    utt.lang  = t('tts_taal');
+    utt.rate  = 0.92;
     utt.pitch = 1.0;
-    utt.onend = () => { index++; spreekVolgende(); };
+    utt.onend  = () => { index++; spreekVolgende(); };
     utt.onerror = () => { index++; spreekVolgende(); };
     window.speechSynthesis.speak(utt);
     index++;
@@ -1492,14 +1521,11 @@ function ttsStart() {
 }
 
 function ttsVerzamelTekst() {
-  // Vind actieve paneel
   const actief = document.querySelector('.paneel.actief');
   if (!actief) return '';
-
   const id = actief.id;
   const delen = [];
 
-  // Tab-naam als intro
   const tabNamen = {
     'tab-dashboard':    taal === 'it' ? 'Stato' : 'Stand',
     'tab-uitgaven':     taal === 'it' ? 'Spese' : 'Uitgaven',
@@ -1510,38 +1536,25 @@ function ttsVerzamelTekst() {
   };
   if (tabNamen[id]) delen.push(tabNamen[id] + '.');
 
-  // Dashboard: saldo, butler, komende items
   if (id === 'tab-dashboard') {
     const getal = document.getElementById('grootGetal')?.textContent;
     const label = document.getElementById('lblVrijBesteden')?.textContent;
     if (getal && label) delen.push(`${label}: ${getal}.`);
-
     const butler = document.getElementById('butlerBericht');
     if (butler?.classList.contains('zichtbaar')) delen.push(butler.textContent);
-
-    const komend = document.getElementById('komendePlanner');
-    if (komend) {
-      komend.querySelectorAll('.gepland-item').forEach(item => {
-        const badge = item.querySelector('.gepland-datum-badge')?.textContent?.trim();
-        const naam  = item.querySelector('span:nth-child(2)')?.textContent?.trim();
-        const bed   = item.querySelector('span:nth-child(3)')?.textContent?.trim();
-        if (naam) delen.push(`${badge || ''} ${naam} ${bed || ''}.`);
-      });
-    }
-
-    const overzicht = document.getElementById('overzichtLijst');
-    if (overzicht) {
-      overzicht.querySelectorAll('.post-item').forEach(item => {
-        const naam = item.querySelector('.post-naam')?.textContent?.trim();
-        const bed  = item.querySelector('.post-bedrag')?.textContent?.trim();
-        const dat  = item.querySelector('.post-datum')?.textContent?.trim();
-        if (naam && bed) delen.push(`${naam}, ${dat || ''}, ${bed}.`);
-      });
-    }
-  }
-
-  // Uitgaven
-  else if (id === 'tab-uitgaven') {
+    document.querySelectorAll('#komendePlanner .gepland-item').forEach(item => {
+      const badge = item.querySelector('.gepland-datum-badge')?.textContent?.trim();
+      const naam  = item.querySelectorAll('span')[1]?.textContent?.trim();
+      const bed   = item.querySelectorAll('span')[2]?.textContent?.trim();
+      if (naam) delen.push(`${badge || ''} ${naam} ${bed || ''}.`);
+    });
+    document.querySelectorAll('#overzichtLijst .post-item').forEach(item => {
+      const naam = item.querySelector('.post-naam')?.textContent?.trim();
+      const bed  = item.querySelector('.post-bedrag')?.textContent?.trim();
+      const dat  = item.querySelector('.post-datum')?.textContent?.trim();
+      if (naam && bed) delen.push(`${naam}, ${dat || ''}, ${bed}.`);
+    });
+  } else if (id === 'tab-uitgaven') {
     const totaal = document.getElementById('totaalUitgegeven')?.textContent;
     if (totaal) delen.push(`${t('lblTotaalUitgegeven')}: ${totaal}.`);
     document.querySelectorAll('#uitgavenLijst .post-item').forEach(item => {
@@ -1550,10 +1563,7 @@ function ttsVerzamelTekst() {
       const dat  = item.querySelector('.post-datum')?.textContent?.trim();
       if (naam && bed) delen.push(`${naam}, ${dat || ''}, ${bed}.`);
     });
-  }
-
-  // Gepland
-  else if (id === 'tab-gepland') {
+  } else if (id === 'tab-gepland') {
     document.querySelectorAll('#geplandLijst .gepland-item').forEach(item => {
       const badge = item.querySelector('.gepland-datum-badge')?.textContent?.trim();
       const naam  = item.querySelectorAll('span')[1]?.textContent?.trim();
@@ -1562,10 +1572,7 @@ function ttsVerzamelTekst() {
     });
     const totaal = document.getElementById('geplandTotaal')?.textContent;
     if (totaal) delen.push(`${t('lblTotaalGepland')}: ${totaal}.`);
-  }
-
-  // Vaste lasten
-  else if (id === 'tab-vaste') {
+  } else if (id === 'tab-vaste') {
     document.querySelectorAll('#vasteLijst .post-item').forEach(item => {
       const naam = item.querySelector('.post-naam')?.textContent?.trim();
       const bed  = item.querySelector('.post-bedrag')?.textContent?.trim();
@@ -1573,49 +1580,27 @@ function ttsVerzamelTekst() {
     });
     const totaal = document.getElementById('vasteTotaal')?.textContent;
     if (totaal) delen.push(`${t('lblTotaalVaste')}: ${totaal}.`);
-  }
-
-  // Gids
-  else if (id === 'tab-gids') {
-    // Cirkels
+  } else if (id === 'tab-gids') {
     const vrij = berekenVrij();
     if (vrij !== null) delen.push(`${t('gids_cirkel_vrij')}: € ${vrij.toFixed(2).replace('.',',')}.`);
-
-    // Handleiding secties
     ['gidsDagelijksInhoud','gidsFunctiesInhoud','gidsTipsInhoud'].forEach(elId => {
-      const el = document.getElementById(elId);
-      if (!el) return;
-      el.querySelectorAll('div > div').forEach(blok => {
+      document.getElementById(elId)?.querySelectorAll('div > div').forEach(blok => {
         const tekst = blok.textContent?.trim();
         if (tekst) delen.push(tekst + '.');
       });
     });
-  }
-
-  // Instellingen — lees labels en huidige waarden voor
-  else if (id === 'tab-instellingen') {
+  } else if (id === 'tab-instellingen') {
     const saldoLbl = document.getElementById('lblSaldoTitel')?.textContent;
-    const saldoVal = staat.saldo !== null
-      ? `€ ${staat.saldo.toFixed(2).replace('.',',')}`
-      : (taal === 'it' ? 'Non impostato' : 'Niet ingesteld');
+    const saldoVal = staat.saldo !== null ? `€ ${staat.saldo.toFixed(2).replace('.',',')}` : (taal === 'it' ? 'Non impostato' : 'Niet ingesteld');
     delen.push(`${saldoLbl}: ${saldoVal}.`);
-
     const limietLbl = document.getElementById('lblLimietTitel')?.textContent;
-    const limietVal = staat.limiet !== null
-      ? `€ ${staat.limiet.toFixed(2).replace('.',',')}`
-      : (taal === 'it' ? 'Non impostato' : 'Niet ingesteld');
+    const limietVal = staat.limiet !== null ? `€ ${staat.limiet.toFixed(2).replace('.',',')}` : (taal === 'it' ? 'Non impostato' : 'Niet ingesteld');
     delen.push(`${limietLbl}: ${limietVal}.`);
-
-    // Offline stappen
     T[taal].offline_stappen.forEach(s => delen.push(`${s[0]}: ${s[1]}`));
   }
 
   return delen.filter(Boolean).join(' ');
 }
-
-// Stop TTS als van tab gewisseld wordt
-const _origToonTab = toonTab;
-// (toonTab is al gedefinieerd; we haken in via een wrapper in de START-sectie)
 
 // ════════════════════════════════════════════════════════
 //  START
@@ -1625,13 +1610,7 @@ pasTaalToe();
 teken();
 document.getElementById('geplandDatum').valueAsDate = new Date();
 checkBackupBijOpstart();
-
-// Stop TTS bij tab-wissel
-const _origToonTab = toonTab;
-function toonTab(naam) {
-  ttsStop();
-  _origToonTab(naam);
-}
+ttsUpdateUI();
 
 // Stop TTS als app naar achtergrond gaat (ook voor bankapp-melding)
 document.addEventListener('visibilitychange', () => {
