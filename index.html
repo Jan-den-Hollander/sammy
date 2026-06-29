@@ -1489,35 +1489,73 @@ function ttsStart() {
   const tekst = ttsVerzamelTekst();
   if (!tekst) { toonMelding(t('tts_geen')); return; }
 
-  const zinnen = tekst.match(/[^.!?]+[.!?]+/g) || [tekst];
-  let index = 0;
   ttsActief = true;
   const knop = document.getElementById('ttsKnop');
   if (knop) { knop.classList.add('actief'); knop.textContent = '⏹️'; }
   toonMelding(t('tts_aan'));
 
-  function spreekVolgende() {
-    if (!ttsActief || index >= zinnen.length) { ttsStop(); return; }
-    const utt = new SpeechSynthesisUtterance(zinnen[index].trim());
+  // Knip op zinsgrenzen, groepeer tot blokken van max 500 tekens
+  const MAX_BLOK = 500;
+  const blokken = [];
+  const zinnen = tekst.match(/[^.!?\n]+[.!?\n]*/g) || [tekst];
+  let huidigBlok = '';
+  for (const zin of zinnen) {
+    if ((huidigBlok + zin).length > MAX_BLOK && huidigBlok) {
+      blokken.push(huidigBlok.trim());
+      huidigBlok = zin;
+    } else {
+      huidigBlok += zin;
+    }
+  }
+  if (huidigBlok.trim()) blokken.push(huidigBlok.trim());
+
+  let blokIndex = 0;
+  let androidTimer = null;
+
+  function spreekBlok() {
+    if (!ttsActief || blokIndex >= blokken.length) {
+      ttsStop(); return;
+    }
+
+    const utt = new SpeechSynthesisUtterance(blokken[blokIndex]);
     utt.lang  = t('tts_taal');
     utt.rate  = 0.92;
     utt.pitch = 1.0;
-    utt.onend  = () => { index++; spreekVolgende(); };
-    utt.onerror = () => { index++; spreekVolgende(); };
+
+    utt.onstart = () => {
+      clearInterval(androidTimer);
+      androidTimer = setInterval(() => {
+        if (!ttsActief) { clearInterval(androidTimer); return; }
+        if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
+          window.speechSynthesis.pause();
+          window.speechSynthesis.resume();
+        }
+      }, 10000);
+    };
+
+    utt.onend = () => {
+      clearInterval(androidTimer);
+      blokIndex++;
+      setTimeout(spreekBlok, 80);
+    };
+
+    utt.onerror = (e) => {
+      clearInterval(androidTimer);
+      if (e.error !== 'interrupted') {
+        blokIndex++;
+        setTimeout(spreekBlok, 80);
+      }
+    };
+
     window.speechSynthesis.speak(utt);
-    index++;
   }
 
-  // Android-fix: speechSynthesis stopt soms na ~15 sec
-  const androidFix = setInterval(() => {
-    if (!ttsActief) { clearInterval(androidFix); return; }
-    if (window.speechSynthesis.speaking) {
-      window.speechSynthesis.pause();
-      window.speechSynthesis.resume();
-    }
-  }, 10000);
-
-  spreekVolgende();
+  // Cicerone-aanpak: cancel, kleine pauze, dan resume + eerste blok
+  window.speechSynthesis.cancel();
+  setTimeout(() => {
+    window.speechSynthesis.resume();
+    spreekBlok();
+  }, 100);
 }
 
 function ttsVerzamelTekst() {
