@@ -1612,10 +1612,21 @@ function ttsVerzamelTekst() {
   } else if (id === 'tab-gids') {
     const vrij = berekenVrij();
     if (vrij !== null) delen.push(`${t('gids_cirkel_vrij')}: € ${vrij.toFixed(2).replace('.',',')}.`);
-    ['gidsDagelijksInhoud','gidsFunctiesInhoud','gidsTipsInhoud'].forEach(elId => {
-      document.getElementById(elId)?.querySelectorAll('div > div').forEach(blok => {
-        const tekst = blok.textContent?.trim();
-        if (tekst) delen.push(tekst + '.');
+    // Lees rechtstreeks uit vertaaltabel — elk item titel + beschrijving apart
+    // Zo raken emoji's en zinsgrenzen nooit door elkaar
+    const secties = [
+      T[taal].gids_dagelijks,
+      T[taal].gids_functies,
+      T[taal].gids_tips,
+    ];
+    secties.forEach(sectie => {
+      if (!sectie) return;
+      sectie.forEach(item => {
+        // Titel zonder emoji (alles na eerste spatie)
+        const titel = item[0].replace(/^\S+\s*/, '').trim();
+        const beschrijving = item[1].trim();
+        if (titel) delen.push(titel + '.');
+        if (beschrijving) delen.push(beschrijving);
       });
     });
   } else if (id === 'tab-instellingen') {
@@ -1628,7 +1639,14 @@ function ttsVerzamelTekst() {
     T[taal].offline_stappen.forEach(s => delen.push(`${s[0]}: ${s[1]}`));
   }
 
-  return delen.filter(Boolean).join(' ');
+  // Zorg dat elk deel eindigt op leesteken zodat de splitslogica correct werkt
+  return delen
+    .filter(Boolean)
+    .map(d => {
+      const s = d.trim();
+      return /[.!?]$/.test(s) ? s : s + '.';
+    })
+    .join(' ');
 }
 
 // ════════════════════════════════════════════════════════
