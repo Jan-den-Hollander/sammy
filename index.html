@@ -358,6 +358,7 @@
   <div class="tab" onclick="toonTab('uitgaven')" id="tabUitgaven">💸 Uitgaven</div>
   <div class="tab" onclick="toonTab('gepland')" id="tabGepland">📅 Gepland</div>
   <div class="tab" onclick="toonTab('vaste')" id="tabVaste">🏠 Vast</div>
+  <div class="tab" onclick="toonTab('balans')" id="tabBalans">💰 Balans</div>
   <div class="tab" onclick="toonTab('gids')" id="tabGids">📚 Gids</div>
   <div class="tab" onclick="toonTab('instellingen')" id="tabInstellingen">⚙️</div>
 </div>
@@ -448,6 +449,54 @@
       <span id="vasteTotaal" style="color:var(--red)">€ 0,00</span>
     </div>
   </div>
+</div>
+
+<!-- PANEEL: BALANS -->
+<div class="paneel" id="tab-balans">
+
+  <!-- SPAARSALDO KAART -->
+  <div class="kaart">
+    <h3 id="lblBalaansSaldo">Lopend spaarsaldo</h3>
+    <div style="text-align:center;padding:12px 0 8px">
+      <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:6px" id="lblSpaarsaldoLabel">Totaal gespaard / schuld</div>
+      <div id="spaarsaldoGetal" style="font-family:'Playfair Display',serif;font-size:2.6rem;font-weight:700;color:var(--green)">€ 0,00</div>
+      <div id="spaarsaldoSubtitel" style="font-size:0.75rem;color:var(--muted);margin-top:4px"></div>
+    </div>
+  </div>
+
+  <!-- GRAFIEK -->
+  <div class="kaart">
+    <h3 id="lblGrafiekTitel">Verloop per periode</h3>
+    <div id="balanGrafiek" style="margin-top:8px;min-height:120px">
+      <p class="hint" id="lblGeenPeriodes">Nog geen afgesloten periodes. Start een nieuwe periode via 💸 Uitgaven.</p>
+    </div>
+  </div>
+
+  <!-- MEEVALLERS / TEGENVALLERS -->
+  <div class="kaart">
+    <h3 id="lblMeeTegen">Meevaller of tegenvaller boeken</h3>
+    <p class="hint" id="lblMeeTegenHint">Onverwacht geld gekregen of een onverwachte uitgave? Boek het hier direct in het spaarsaldo.</p>
+    <div class="invoer-blok">
+      <label id="lblMeeTegenOmschrijving">Omschrijving</label>
+      <input type="text" id="meeTegenNaam">
+    </div>
+    <div class="invoer-2col">
+      <div class="invoer-blok" style="margin-bottom:0">
+        <label id="lblMeeTegenBedrag">Bedrag (€)</label>
+        <input type="number" id="meeTegenBedrag" step="0.50" min="0">
+      </div>
+      <div class="invoer-blok" style="margin-bottom:0">
+        <label id="lblMeeTegenType">Type</label>
+        <select id="meeTegenType">
+          <option value="plus" id="optMeevaller">+ Meevaller</option>
+          <option value="min" id="optTegenvaller">− Tegenvaller</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn-groen btn-vol" onclick="meeTegenBoeken()" id="btnMeeTegenBoeken" style="margin-top:10px">+ Boeken in spaarsaldo</button>
+    <ul class="post-lijst" id="meeTegenLijst" style="margin-top:12px"></ul>
+  </div>
+
 </div>
 
 <!-- PANEEL: GIDS -->
@@ -620,6 +669,32 @@ const T = {
     lblAlleUitgaven: 'Alle uitgaven deze periode',
     lblTotaalUitgegeven: 'Totaal uitgegeven',
     btnNieuwePeriode: '🔄 Nieuwe periode starten',
+    tabBalans: '💰 Balans',
+    lblBalaansSaldo: 'Lopend spaarsaldo',
+    lblSpaarsaldoLabel: 'Totaal gespaard / schuld',
+    lblGrafiekTitel: 'Verloop per periode',
+    lblGeenPeriodes: 'Nog geen afgesloten periodes. Start een nieuwe periode via 💸 Uitgaven.',
+    lblMeeTegen: 'Meevaller of tegenvaller boeken',
+    lblMeeTegenHint: 'Onverwacht geld gekregen of een onverwachte uitgave? Boek het hier direct in het spaarsaldo.',
+    lblMeeTegenOmschrijving: 'Omschrijving',
+    lblMeeTegenBedrag: 'Bedrag (€)',
+    lblMeeTegenType: 'Type',
+    optMeevaller: '+ Meevaller',
+    optTegenvaller: '− Tegenvaller',
+    btnMeeTegenBoeken: '+ Boeken in spaarsaldo',
+    periode_bevestig_titel: 'Periode afsluiten',
+    periode_overschot: 'Je hebt deze periode € {X} overgehouden.',
+    periode_tekort: 'Je hebt deze periode € {X} tekort gekomen.',
+    periode_vraag_spaar: 'Wil je dit toevoegen aan je spaarsaldo?',
+    periode_ja: 'Ja, toevoegen aan spaarsaldo',
+    periode_nee: 'Nee, alleen periode wissen',
+    melding_spaar_toegevoegd: '✓ Toegevoegd aan spaarsaldo',
+    melding_meevaller: 'Meevaller geboekt',
+    melding_tegenvaller: 'Tegenvaller geboekt',
+    melding_vul_meevaller: 'Vul omschrijving en bedrag in',
+    gespaard_label: 'gespaard',
+    schuld_label: 'schuld',
+    grafiek_geen_data: 'Nog geen data',
     lblGeplandeTitel: 'Geplande activiteiten & kosten',
     lblGeplandHint: 'Voeg hier dingen toe die je nog moet betalen of doen — een verjaardag, een avondje uit, een cadeau.',
     lblWatOmschrijving: "Wat? (bv. 'Uit eten + Kaartje Sarah')",
@@ -734,16 +809,19 @@ const T = {
       ['📱 Bankapp-melding', 'Als je 8 seconden of langer in een andere app was (betaalapp, Tikkie) en terugkomt naar Sammy, verschijnt een blauwe melding bovenaan: vergeet je saldo bij te werken!'],
     ],
     gids_tips: [
-      ['🔖 Snelkoppeling op je scherm', 'Sla Sammy op via Chrome → ⋮ → "Toevoegen aan startscherm". Dan open je hem elke ochtend met één tik, net als een echte app.'],
+      ['🔖 Snelkoppeling op je scherm', 'Alleen voor de online versie (vercel.app): Chrome → ⋮ → "Toevoegen aan startscherm". Dan open je hem elke ochtend met één tik. Voor lokale opslag: zie de uitgebreide tips in ⚙️ Instellingen.'],
       ['⚡ Snelknoppen instellen', 'Maak snelknoppen voor terugkerende uitgaven: Koffie €2,50 · Brood €3,00 · Bus €1,90. Dan boek je een uitgave met één tik, zonder typen.'],
       ['🎯 Limiet instellen', 'Stel bij ⚙️ een realistisch weekbudget in als limiet. De meter en de kleurcode maken direct zichtbaar hoeveel "ruimte" je nog hebt.'],
       ['🔄 Maandelijks resetten', 'Begin elke maand of week met "Nieuwe periode starten" op het Uitgaven-tabblad. Maak eerst een backup, dan wis je met een gerust hart.'],
     ],
     offline_stappen: [
-      ['Chrome / Samsung Browser', 'Tik op de drie puntjes (⋮) rechtsboven → "Toevoegen aan startscherm" → Toevoegen.'],
-      ['Firefox', 'Tik op het menu (⋮) → "Pagina" → "Snelkoppeling toevoegen aan startscherm".'],
-      ['Gegevens blijven bewaard', 'Je gegevens staan in de browser opgeslagen (localStorage). Ze blijven staan zolang je de browserdata niet wist.'],
-      ['Tip', 'Open Sammy elke ochtend even en vergelijk je saldo met je bankapp — dan houd je het altijd bij.'],
+      ['⭐ Samsung: Mijn Bestanden (beste methode)', 'Sla Sammy op als HTML-bestand in je Downloads. Open "Mijn Bestanden" → zoek het bestand → tik op de drie puntjes (⋮) → "Snelkoppeling toevoegen" → "Startscherm". Werkt volledig offline op alle Samsung-toestellen.'],
+      ['📌 Google Bladwijzers widget (alternatief, soms mogelijk)', 'Voeg de Google Bladwijzers-widget toe aan je startscherm. Sla Sammy op als bladwijzer in Chrome of Samsung Browser. De widget toont je bladwijzers als tegels — tik erop om Sammy direct te openen. Voordeel: je ziet in één oogopslag ook andere lokaal opgeslagen pagina\'s zoals jukebox of spiegelapps. Of dit werkt met lokale bestanden hangt af van je Android-versie en browser, maar op veel Samsung-toestellen lukt het prima. Probeer het gewoon.'],
+      ['⚠️ Snelkoppeling via browser (alleen online)', 'Chrome en Samsung Browser kunnen een snelkoppeling maken via ⋮ → "Toevoegen aan startscherm", maar dit werkt alleen voor online pagina\'s (vercel.app). Voor lokale bestanden gebruik je Mijn Bestanden of de widget (zie hierboven).'],
+      ['Firefox (lokaal bestand)', 'Open het HTML-bestand in Firefox → tik op ⋮ → "Pagina" → "Snelkoppeling toevoegen aan startscherm". Firefox ondersteunt lokale bestanden beter dan Chrome.'],
+      ['Andere Android-merken', 'Pixel, OnePlus en andere merken hebben een vergelijkbare bestandsbeheerder. Zoek het HTML-bestand, houd het ingedrukt of tik op ⋮ → "Snelkoppeling" of "Vastmaken aan startscherm". De exacte naam verschilt per merk.'],
+      ['Gegevens blijven bewaard', 'Je gegevens staan opgeslagen in de browser (localStorage). Ze blijven staan zolang je de browserdata niet wist. Maak regelmatig een backup via ⚙️ Instellingen.'],
+      ['Tip: elke ochtend openen', 'Open Sammy elke ochtend met één tik, ook als je hem even niet nodig hebt. Zo blijft hij op de achtergrond actief en kan hij de bankapp-melding tonen.'],
     ],
   },
   it: {
@@ -763,6 +841,32 @@ const T = {
     lblAlleUitgaven: 'Tutte le spese del periodo',
     lblTotaalUitgegeven: 'Totale speso',
     btnNieuwePeriode: '🔄 Inizia nuovo periodo',
+    tabBalans: '💰 Bilancio',
+    lblBalaansSaldo: 'Saldo di risparmio',
+    lblSpaarsaldoLabel: 'Totale risparmiato / debito',
+    lblGrafiekTitel: 'Andamento per periodo',
+    lblGeenPeriodes: 'Nessun periodo chiuso. Avvia un nuovo periodo in 💸 Spese.',
+    lblMeeTegen: 'Registra entrata o uscita imprevista',
+    lblMeeTegenHint: 'Hai ricevuto dei soldi inaspettati o hai avuto una spesa imprevista? Registrala direttamente nel saldo di risparmio.',
+    lblMeeTegenOmschrijving: 'Descrizione',
+    lblMeeTegenBedrag: 'Importo (€)',
+    lblMeeTegenType: 'Tipo',
+    optMeevaller: '+ Entrata imprevista',
+    optTegenvaller: '− Uscita imprevista',
+    btnMeeTegenBoeken: '+ Registra nel saldo',
+    periode_bevestig_titel: 'Chiudi periodo',
+    periode_overschot: 'Hai risparmiato € {X} in questo periodo.',
+    periode_tekort: 'Hai avuto un deficit di € {X} in questo periodo.',
+    periode_vraag_spaar: 'Vuoi aggiungerlo al saldo di risparmio?',
+    periode_ja: 'Sì, aggiungi al saldo',
+    periode_nee: 'No, solo azzera il periodo',
+    melding_spaar_toegevoegd: '✓ Aggiunto al saldo di risparmio',
+    melding_meevaller: 'Entrata imprevista registrata',
+    melding_tegenvaller: 'Uscita imprevista registrata',
+    melding_vul_meevaller: 'Inserisci descrizione e importo',
+    gespaard_label: 'risparmiato',
+    schuld_label: 'debito',
+    grafiek_geen_data: 'Nessun dato',
     lblGeplandeTitel: 'Attività e costi pianificati',
     lblGeplandHint: 'Aggiungi cose da pagare o fare — un compleanno, una serata fuori, un regalo.',
     lblWatOmschrijving: "Cosa? (es. 'Cena + Regalo Sara')",
@@ -877,16 +981,19 @@ const T = {
       ['📱 Notifica app bancaria', 'Se sei stato in un\'altra app per 8 secondi o più (app bancaria, pagamento) e torni a Sammy, appare una notifica blu in cima: non dimenticare di aggiornare il saldo!'],
     ],
     gids_tips: [
-      ['🔖 Collegamento sulla schermata iniziale', 'Salva Sammy tramite Chrome → ⋮ → "Aggiungi a schermata Home". Poi lo apri ogni mattina con un tocco, come una vera app.'],
+      ['🔖 Collegamento sulla schermata iniziale', 'Solo per la versione online (vercel.app): Chrome → ⋮ → "Aggiungi a schermata Home". Per il file locale: vedi i consigli dettagliati in ⚙️ Impostazioni → Salva offline. Poi lo apri ogni mattina con un tocco, come una vera app.'],
       ['⚡ Imposta pulsanti rapidi', 'Crea pulsanti per le spese ricorrenti: Caffè €1,50 · Pane €2,00 · Autobus €1,90. Poi registri una spesa con un solo tocco, senza digitare.'],
       ['🎯 Imposta un limite', 'Imposta un budget settimanale realistico come limite in ⚙️. Il misuratore e il codice colore mostrano subito quanto "spazio" hai ancora.'],
       ['🔄 Reset mensile', 'Inizia ogni mese o settimana con "Inizia nuovo periodo" nella scheda Spese. Fai prima un backup, poi cancella in tutta tranquillità.'],
     ],
     offline_stappen: [
-      ['Chrome / Browser Samsung', 'Tocca i tre puntini (⋮) in alto a destra → "Aggiungi a schermata Home" → Aggiungi.'],
-      ['Firefox', 'Tocca il menu (⋮) → "Pagina" → "Aggiungi collegamento alla schermata Home".'],
-      ['I dati rimangono salvati', 'I tuoi dati sono memorizzati nel browser (localStorage) e rimangono fino a quando non cancelli i dati del browser.'],
-      ['Consiglio', 'Apri Sammy ogni mattina e confronta il saldo con la tua app bancaria — così sei sempre aggiornato.'],
+      ['⭐ Samsung: I miei file (metodo migliore)', 'Salva Sammy come file HTML nei Download. Apri "I miei file" → cerca il file → tocca i tre puntini (⋮) → "Aggiungi collegamento" → "Schermata Home". Funziona completamente offline su tutti i dispositivi Samsung.'],
+      ['📌 Widget Segnalibri Google (alternativa, a volte possibile)', 'Aggiungi il widget Segnalibri Google alla schermata Home. Salva Sammy come segnalibro in Chrome o Samsung Browser. Il widget mostra i segnalibri come riquadri — toccane uno per aprire Sammy direttamente. Vantaggio: puoi vedere in un colpo d\'occhio anche altre pagine salvate localmente come jukebox o app specchio. Se funziona con file locali dipende dalla versione Android e dal browser, ma su molti dispositivi Samsung funziona benissimo. Vale la pena provare.'],
+      ['⚠️ Collegamento dal browser (solo online)', 'Chrome e Samsung Browser possono creare un collegamento tramite ⋮ → "Aggiungi a schermata Home", ma funziona solo per pagine online (vercel.app). Per file locali usa I miei file o il widget (vedi sopra).'],
+      ['Firefox (file locale)', 'Apri il file HTML in Firefox → tocca ⋮ → "Pagina" → "Aggiungi collegamento alla schermata Home". Firefox supporta meglio i file locali rispetto a Chrome.'],
+      ['Altri marchi Android', 'Pixel, OnePlus e altri marchi hanno un gestore file simile. Trova il file HTML, tienilo premuto o tocca ⋮ → "Collegamento" o "Aggiungi alla schermata Home". Il nome esatto varia per marca.'],
+      ['I dati rimangono salvati', 'I tuoi dati sono memorizzati nel browser (localStorage) e rimangono fino a quando non cancelli i dati del browser. Fai regolarmente un backup in ⚙️ Impostazioni.'],
+      ['Consiglio: apri ogni mattina', 'Apri Sammy ogni mattina con un tocco, anche se non ne hai bisogno. Così rimane attivo in background e può mostrare la notifica dell\'app bancaria.'],
     ],
   }
 };
@@ -907,7 +1014,7 @@ function wisselTaal() {
 function pasTaalToe() {
   const ids = [
     'headerSub','taalKnop','lblVrijBesteden',
-    'tabDashboard','tabUitgaven','tabGepland','tabVaste','tabGids',
+    'tabDashboard','tabUitgaven','tabGepland','tabVaste','tabBalans','tabGids',
     'lblSnelBoeken','lblWatGekocht','lblBedrag','btnBoekUitgave',
     'lblKomendeDagen','lblGeenGepland','lblOverzicht','lblGeenUitgaven',
     'lblAlleUitgaven','lblTotaalUitgegeven','btnNieuwePeriode',
@@ -923,6 +1030,9 @@ function pasTaalToe() {
     'backupJaKnop','backupNeeKnop',
     'bankBannerKnop',
     'lblGidsOverzichtTitel','lblGidsDagelijks','lblGidsFuncties','lblGidsTips',
+    'lblBalaansSaldo','lblSpaarsaldoLabel','lblGrafiekTitel','lblGeenPeriodes',
+    'lblMeeTegen','lblMeeTegenHint','lblMeeTegenOmschrijving','lblMeeTegenBedrag',
+    'lblMeeTegenType','optMeevaller','optTegenvaller','btnMeeTegenBoeken',
     'lblTtsTitel','lblTtsHint','lblTtsAan','lblTtsUit',
   ];
   ids.forEach(id => { const el = document.getElementById(id); if (el) el.textContent = t(id); });
@@ -1021,7 +1131,7 @@ function tekenGidsCirkels() {
 }
 
 
-let staat = { saldo: null, limiet: null, grens: 25, vasteLasten: [], geplande: [], uitgaven: [], snelKnoppen: [] };
+let staat = { saldo: null, limiet: null, grens: 25, vasteLasten: [], geplande: [], uitgaven: [], snelKnoppen: [], spaarsaldo: 0, periodeHistoriek: [], meeTegenVallers: [] };
 
 function laad() {
   const op = localStorage.getItem('regelneef_v2');
@@ -1040,10 +1150,11 @@ function toonTab(naam) {
   document.querySelectorAll('.paneel').forEach(p => p.classList.remove('actief'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('actief'));
   document.getElementById('tab-' + naam).classList.add('actief');
-  ['dashboard','uitgaven','gepland','vaste','gids','instellingen'].forEach((n,i) => {
+  ['dashboard','uitgaven','gepland','vaste','balans','gids','instellingen'].forEach((n,i) => {
     if (n === naam) document.querySelectorAll('.tab')[i].classList.add('actief');
   });
   if (naam === 'gids') tekenGids();
+  if (naam === 'balans') tekenBalans();
   teken();
 }
 
@@ -1239,9 +1350,218 @@ function tekenUitgaven() {
 }
 function uitgaveVerwijder(id) { staat.uitgaven = staat.uitgaven.filter(u => u.id !== id); sla(); teken(); }
 function periodeResetten() {
+  // Bereken overschot of tekort van deze periode
+  const vrij = berekenVrij();
+  const uitgegeven = staat.uitgaven.reduce((s,u) => s + u.bedrag, 0);
+
+  if (staat.uitgaven.length === 0) {
+    if (!confirm(t('confirm_periode'))) return;
+    staat.uitgaven = [];
+    sla(); teken(); toonMelding(t('melding_nieuwe_periode'));
+    return;
+  }
+
+  // Bereken verschil: saldo - uitgegeven = wat er over is of tekort
+  let verschil = null;
+  if (staat.saldo !== null) {
+    verschil = staat.saldo - uitgegeven;
+  }
+
+  // Vraag eerst of de periode gewist mag worden
   if (!confirm(t('confirm_periode'))) return;
-  staat.uitgaven = []; sla(); teken(); toonMelding(t('melding_nieuwe_periode'));
+
+  // Halfautomatisch: toon bevestiging over spaarsaldo
+  if (verschil !== null) {
+    const bedragStr = '€ ' + Math.abs(verschil).toFixed(2).replace('.', ',');
+    const isOverschot = verschil >= 0;
+    const tekstKey = isOverschot ? 'periode_overschot' : 'periode_tekort';
+    const uitlegTekst = t(tekstKey, {X: bedragStr.replace('€ ','')}) + '\n\n' + t('periode_vraag_spaar');
+
+    const naamPeriode = new Date().toLocaleDateString(taal === 'it' ? 'it-IT' : 'nl-NL', {month:'long', year:'numeric'});
+
+    // Toon keuzevenster
+    const keuze = bevestigBalans(uitlegTekst, isOverschot);
+    if (keuze) {
+      // Voeg toe aan spaarsaldo en historiek
+      staat.spaarsaldo = (staat.spaarsaldo || 0) + verschil;
+      staat.periodeHistoriek = staat.periodeHistoriek || [];
+      staat.periodeHistoriek.push({
+        datum: new Date().toISOString(),
+        label: naamPeriode,
+        bedrag: verschil,
+        uitgegeven: uitgegeven,
+      });
+      toonMelding(t('melding_spaar_toegevoegd'));
+    } else {
+      // Sla periode op in historiek maar zonder spaarsaldo te wijzigen
+      staat.periodeHistoriek = staat.periodeHistoriek || [];
+      staat.periodeHistoriek.push({
+        datum: new Date().toISOString(),
+        label: naamPeriode,
+        bedrag: null, // niet doorgevoerd
+        uitgegeven: uitgegeven,
+      });
+    }
+  }
+
+  staat.uitgaven = [];
+  sla(); teken(); toonMelding(t('melding_nieuwe_periode'));
 }
+
+// Bevestigingsvenster met twee knoppen — geeft true/false terug
+function bevestigBalans(tekst, isOverschot) {
+  // Omdat alert/confirm geen twee knoppen ondersteunt, gebruiken we een slimme workaround:
+  // confirm() met de keuze duidelijk in de tekst
+  const bevestigTekst = tekst + '\n\n' +
+    '✓ OK = ' + t('periode_ja') + '\n' +
+    '✗ Annuleren = ' + t('periode_nee');
+  return confirm(bevestigTekst);
+}
+
+// ════════════════════════════════════════════════════════
+//  BALANS — meevallers / tegenvallers / grafiek
+// ════════════════════════════════════════════════════════
+function meeTegenBoeken() {
+  const naam   = document.getElementById('meeTegenNaam').value.trim();
+  const bedrag = parseFloat(document.getElementById('meeTegenBedrag').value);
+  const type   = document.getElementById('meeTegenType').value;
+  if (!naam || !bedrag || bedrag <= 0) { toonMelding(t('melding_vul_meevaller')); return; }
+
+  const delta = type === 'plus' ? bedrag : -bedrag;
+  staat.spaarsaldo = (staat.spaarsaldo || 0) + delta;
+  staat.meeTegenVallers = staat.meeTegenVallers || [];
+  staat.meeTegenVallers.push({
+    id: Date.now(),
+    naam,
+    bedrag: delta,
+    datum: new Date().toISOString(),
+  });
+
+  document.getElementById('meeTegenNaam').value = '';
+  document.getElementById('meeTegenBedrag').value = '';
+  sla(); tekenBalans();
+  toonMelding(type === 'plus' ? t('melding_meevaller') : t('melding_tegenvaller'));
+}
+
+function tekenBalans() {
+  const spaarsaldo = staat.spaarsaldo || 0;
+  const historiek  = staat.periodeHistoriek || [];
+  const meeTegenVallers = staat.meeTegenVallers || [];
+
+  // Groot getal
+  const getalEl = document.getElementById('spaarsaldoGetal');
+  const subEl   = document.getElementById('spaarsaldoSubtitel');
+  if (getalEl) {
+    getalEl.textContent = '€ ' + Math.abs(spaarsaldo).toFixed(2).replace('.', ',');
+    getalEl.style.color = spaarsaldo >= 0 ? 'var(--green)' : 'var(--red)';
+  }
+  if (subEl) {
+    subEl.textContent = spaarsaldo >= 0
+      ? t('gespaard_label')
+      : t('schuld_label');
+    subEl.style.color = spaarsaldo >= 0 ? 'var(--green-mid)' : 'var(--red)';
+  }
+
+  // Grafiek
+  tekenBalansGrafiek(historiek, meeTegenVallers);
+
+  // Mee/tegenvaller lijst
+  const ul = document.getElementById('meeTegenLijst');
+  if (ul) {
+    const alleItems = [
+      ...historiek.filter(p => p.bedrag !== null).map(p => ({
+        naam: p.label,
+        bedrag: p.bedrag,
+        datum: p.datum,
+        type: 'periode',
+      })),
+      ...meeTegenVallers.map(m => ({
+        naam: m.naam,
+        bedrag: m.bedrag,
+        datum: m.datum,
+        id: m.id,
+        type: 'handmatig',
+      })),
+    ].sort((a,b) => new Date(b.datum) - new Date(a.datum));
+
+    if (!alleItems.length) {
+      ul.innerHTML = `<li class="hint">${t('grafiek_geen_data')}</li>`;
+    } else {
+      ul.innerHTML = alleItems.map(item => {
+        const d = new Date(item.datum);
+        const ds = d.toLocaleDateString(taal === 'it' ? 'it-IT' : 'nl-NL', {day:'numeric', month:'short', year:'numeric'});
+        const plus = item.bedrag >= 0;
+        const verwijderKnop = item.type === 'handmatig'
+          ? `<button class="btn-verwijder" onclick="meeTegenVerwijder(${item.id})">✕</button>`
+          : '';
+        return `<li class="post-item">
+          <span class="post-naam">${item.naam}</span>
+          <span class="post-datum">${ds}</span>
+          <span class="post-bedrag" style="color:${plus ? 'var(--green)' : 'var(--red)'}">
+            ${plus ? '+' : '−'} € ${Math.abs(item.bedrag).toFixed(2).replace('.',',')}
+          </span>
+          ${verwijderKnop}
+        </li>`;
+      }).join('');
+    }
+  }
+}
+
+function tekenBalansGrafiek(historiek, meeTegenVallers) {
+  const el = document.getElementById('balanGrafiek');
+  if (!el) return;
+
+  // Combineer periodes en meevallers in chronologische volgorde
+  const alle = [
+    ...historiek.filter(p => p.bedrag !== null).map(p => ({label: p.label, bedrag: p.bedrag, datum: p.datum})),
+    ...meeTegenVallers.map(m => ({label: m.naam, bedrag: m.bedrag, datum: m.datum})),
+  ].sort((a,b) => new Date(a.datum) - new Date(b.datum)).slice(-12); // max 12 items
+
+  if (!alle.length) {
+    el.innerHTML = `<p class="hint" id="lblGeenPeriodes">${t('lblGeenPeriodes')}</p>`;
+    return;
+  }
+
+  const max = Math.max(...alle.map(a => Math.abs(a.bedrag)), 1);
+  const staafHoogte = 90; // px max
+
+  const staven = alle.map(item => {
+    const hoogte = Math.max(4, Math.round((Math.abs(item.bedrag) / max) * staafHoogte));
+    const kleur  = item.bedrag >= 0 ? 'var(--green-mid)' : 'var(--red)';
+    const bedragStr = (item.bedrag >= 0 ? '+' : '−') + ' €' + Math.abs(item.bedrag).toFixed(0);
+    // Korte label: max 6 tekens
+    const lbl = item.label.length > 7 ? item.label.substring(0,6) + '…' : item.label;
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;min-width:0">
+      <div style="font-size:0.58rem;color:${kleur};font-weight:700;white-space:nowrap">${bedragStr}</div>
+      <div style="width:100%;max-width:28px;height:${hoogte}px;background:${kleur};border-radius:4px 4px 0 0;min-height:4px"></div>
+      <div style="font-size:0.55rem;color:var(--muted);text-align:center;word-break:break-word;line-height:1.2;max-width:36px">${lbl}</div>
+    </div>`;
+  }).join('');
+
+  // Lopend cumulatief saldo tonen
+  let cumulatief = 0;
+  const punten = alle.map(item => { cumulatief += item.bedrag; return cumulatief; });
+  const eindSaldo = punten[punten.length - 1];
+  const eindKleur = eindSaldo >= 0 ? 'var(--green)' : 'var(--red)';
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:flex-end;gap:4px;padding:8px 0 4px;min-height:${staafHoogte + 40}px;border-bottom:2px solid var(--line)">
+      ${staven}
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:0.72rem;color:var(--muted)">
+      <span>${t('gespaard_label')} = <span style="color:var(--green-mid)">■</span> &nbsp; ${t('schuld_label')} = <span style="color:var(--red)">■</span></span>
+      <span style="color:${eindKleur};font-weight:700">∑ € ${eindSaldo >= 0 ? '+' : '−'}${Math.abs(eindSaldo).toFixed(2).replace('.',',')}</span>
+    </div>`;
+}
+
+function meeTegenVerwijder(id) {
+  const item = (staat.meeTegenVallers || []).find(m => m.id === id);
+  if (!item) return;
+  staat.spaarsaldo = (staat.spaarsaldo || 0) - item.bedrag;
+  staat.meeTegenVallers = staat.meeTegenVallers.filter(m => m.id !== id);
+  sla(); tekenBalans();
+}
+
 
 // ════════════════════════════════════════════════════════
 //  SNELKNOPPEN
@@ -1784,94 +2104,4 @@ document.addEventListener('visibilitychange', () => {
     document.body.innerHTML = '';
     document.body.style.cssText =
       'margin:0;background:#0d1a07;display:flex;align-items:center;' +
-      'justify-content:center;height:100vh;font-family:sans-serif;';
-    document.body.innerHTML =
-      '<div style="text-align:center;color:#e55;max-width:440px;padding:24px">' +
-      '<div style="font-size:52px">⛔</div>' +
-      '<h2 style="color:#e55;margin:12px 0 8px">Toegang geblokkeerd</h2>' +
-      '<p style="color:#ddd;font-size:14px">De copyright-informatie van ' +
-      '<strong style="color:#8fc87a">' + projectName + '</strong> ' +
-      'is verwijderd of gewijzigd.</p>' +
-      '<p style="color:#aaa;font-size:12px">The copyright information of ' +
-      'this application has been removed or modified.<br>' +
-      'Le informazioni sul copyright di questa applicazione sono state rimosse o modificate.</p>' +
-      '<hr style="border-color:#2d5016;margin:16px 0">' +
-      '<p style="color:#ccc;font-size:13px">Originele auteur / Original author:</p>' +
-      '<p style="margin:4px 0;font-size:14px;color:#fff">© Jan den Hollander</p>' +
-      '<p style="margin:6px 0">' +
-      '<a href="mailto:jandenhollander@duck.com" ' +
-      'style="color:#8fc87a;font-size:12px">jandenhollander@duck.com</a></p>' +
-      '<p style="margin:6px 0">' +
-      '<a href="https://github.com/Jan-den-Hollander" target="_blank" ' +
-      'style="color:#8fc87a;font-size:12px">🔗 github.com/Jan-den-Hollander</a></p>' +
-      '</div>';
-  }
-
-  /* Toegestane domeinen voor Sammy */
-  var ALLOWED = [
-    'localhost', '127.0.0.1',
-    'jan-den-hollander.github.io',
-    'vercel.app',
-    'claude.ai',
-    'stackblitz.io', 'stackblitz.com'
-  ];
-
-  function domainAllowed() {
-    var host = window.location.hostname.toLowerCase();
-    var proto = window.location.protocol;
-    if (proto === 'file:' || proto === 'content:') return true;
-    if (!host || host === '') return true;
-    return ALLOWED.some(function(a) {
-      return host === a || host.endsWith('.' + a) || host.indexOf(a) !== -1;
-    });
-  }
-
-  function warnDomain() {
-    var existing = document.getElementById('jdh-domain-warning');
-    if (existing) return;
-    var banner = document.createElement('div');
-    banner.id = 'jdh-domain-warning';
-    banner.style.cssText =
-      'position:fixed;top:0;left:0;right:0;z-index:99998;' +
-      'background:#5a2010;color:#fff;font-family:sans-serif;' +
-      'font-size:12px;text-align:center;padding:8px 12px;line-height:1.5;';
-    banner.innerHTML =
-      '⚠️ <strong>' + projectName + '</strong> draait op een niet-erkend domein ' +
-      '(<em>' + window.location.hostname + '</em>). ' +
-      'Origineel: <a href="https://github.com/Jan-den-Hollander" ' +
-      'target="_blank" style="color:#ffccaa">github.com/Jan-den-Hollander</a> · ' +
-      '<a href="mailto:jandenhollander@duck.com" style="color:#ffccaa">' +
-      'jandenhollander@duck.com</a>';
-    document.body.insertBefore(banner, document.body.firstChild);
-  }
-
-  if (!domainAllowed()) { setTimeout(warnDomain, 1000); }
-
-  function checkIntegrity() {
-    var footer = document.getElementById('jdh-copyright-footer');
-    var modal  = document.getElementById('jdh-modal');
-    if (!footer || !modal) { blockApp(); return; }
-    var fs = window.getComputedStyle(footer);
-    if (fs.display === 'none' || fs.visibility === 'hidden' || fs.opacity === '0') {
-      footer.style.cssText += ';display:block!important;visibility:visible!important;opacity:1!important;';
-    }
-  }
-
-  checkIntegrity();
-  setInterval(checkIntegrity, 3000);
-
-  var observer = new MutationObserver(function(mutations) {
-    mutations.forEach(function(m) {
-      m.removedNodes.forEach(function(node) {
-        if (node && (node.id === 'jdh-copyright-footer' || node.id === 'jdh-modal')) {
-          blockApp();
-        }
-      });
-    });
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
-})();
-</script>
-
-</body>
-</html>
+      'justify-content:center;
