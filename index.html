@@ -239,6 +239,19 @@
   /* ── HINT ── */
   .hint { font-size: 0.75rem; color: var(--muted); margin: 4px 0 10px; line-height: 1.5; }
 
+  /* ── HISTORIEK (vorige periodes) ── */
+  .historiek-item { border-bottom: 1px solid var(--line); padding: 9px 0; }
+  .historiek-item:last-child { border-bottom: none; }
+  .historiek-kop { display: flex; align-items: center; justify-content: space-between; cursor: pointer; gap: 8px; }
+  .historiek-naam { flex: 1; font-size: 0.84rem; font-weight: 600; }
+  .historiek-sub { font-size: 0.72rem; color: var(--muted); }
+  .historiek-bedrag { font-weight: 600; color: var(--red); white-space: nowrap; margin-left: 8px; }
+  .historiek-pijl { font-size: 0.7rem; color: var(--muted); margin-left: 6px; transition: transform 0.2s; }
+  .historiek-pijl.open { transform: rotate(90deg); }
+  .historiek-detail { display: none; padding: 6px 0 2px 4px; }
+  .historiek-detail.open { display: block; }
+  .historiek-detail .post-item { font-size: 0.79rem; padding: 6px 0; }
+
   /* ── OFFLINE KAART ── */
   .offline-kaart {
     background: var(--paper);
@@ -399,6 +412,12 @@
     </div>
   </div>
   <button class="btn-klein btn-vol" onclick="periodeResetten()" style="margin-top:8px" id="btnNieuwePeriode">🔄 Nieuwe periode starten</button>
+
+  <div class="kaart" style="margin-top:14px">
+    <h3 id="lblHistoriekTitel">Vorige periodes</h3>
+    <p class="hint" id="lblHistoriekHint">Bekijk de uitgaven van eerder afgesloten periodes.</p>
+    <ul class="post-lijst" id="historiekLijst"><li class="hint" id="lblHistoriekLeeg">Nog geen eerdere periodes.</li></ul>
+  </div>
 </div>
 
 <!-- PANEEL: GEPLAND -->
@@ -570,6 +589,27 @@
     </div>
   </div>
 
+  <!-- Bewaartermijn geschiedenis -->
+  <div class="kaart">
+    <h3 id="lblBewaartermijnTitel">Bewaartermijn geschiedenis</h3>
+    <p class="hint" id="lblBewaartermijnHint">Hoelang wil je de uitgaven van afgesloten periodes bewaren onder "Vorige periodes"? Laat het aantal leeg voor onbeperkt bewaren.</p>
+    <div class="invoer-2col">
+      <div class="invoer-blok" style="margin-bottom:0">
+        <label id="lblBewaarAantal">Aantal</label>
+        <input type="number" id="bewaarAantalInput" placeholder="∞" min="0" step="1">
+      </div>
+      <div class="invoer-blok" style="margin-bottom:0">
+        <label id="lblBewaarEenheid">Eenheid</label>
+        <select id="bewaarEenheidInput">
+          <option value="weken" id="optWeken">weken</option>
+          <option value="maanden" id="optMaanden">maanden</option>
+          <option value="jaar" id="optJaar">jaar</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn-groen btn-vol" onclick="bewaartermijnOpslaan()" id="btnBewaartermijnOpslaan">Opslaan</button>
+  </div>
+
   <!-- Snelknoppen — nu nette uitlijning -->
   <div class="kaart">
     <h3 id="lblSnelknoppenTitel">Snelknoppen instellen</h3>
@@ -720,6 +760,18 @@ const T = {
     lblWaarschuwingHint: 'Percentage van je limiet waarbij Sammy je waarschuwt (standaard 25%).',
     lblGrensInvoer: 'Grens (%)',
     btnGrensOpslaan: 'Opslaan',
+    lblBewaartermijnTitel: 'Bewaartermijn geschiedenis',
+    lblBewaartermijnHint: 'Hoelang wil je de uitgaven van afgesloten periodes bewaren onder "Vorige periodes"? Laat het aantal leeg voor onbeperkt bewaren.',
+    lblBewaarAantal: 'Aantal',
+    lblBewaarEenheid: 'Eenheid',
+    optWeken: 'weken', optMaanden: 'maanden', optJaar: 'jaar',
+    btnBewaartermijnOpslaan: 'Opslaan',
+    melding_bewaartermijn_opgeslagen: 'Bewaartermijn opgeslagen',
+    melding_historiek_opgeruimd: '🗑️ {N} oude periode(s) opgeruimd volgens je bewaartermijn. Maak gerust een backup als je ze wilt bewaren.',
+    lblHistoriekTitel: 'Vorige periodes',
+    lblHistoriekHint: 'Bekijk de uitgaven van eerder afgesloten periodes.',
+    lblHistoriekLeeg: 'Nog geen eerdere periodes.',
+    historiek_geen_detail: 'Geen losse uitgaven bewaard voor deze periode.',
     lblSnelknoppenTitel: 'Snelknoppen instellen',
     lblSnelknoppenHint: 'Veelvoorkomende uitgaven voor één-tik boeking (bv. "Koffie €2,50").',
     lblSnelLabel: "Label (bv. 'Koffie')",
@@ -802,7 +854,7 @@ const T = {
     ],
     gids_functies: [
       ['📊 Stand — de grote meter', 'Dit is je digitale portemonnee. De meter loopt van groen (ruim) via goud (krap) naar oranje en rood. Hieronder vertelt Sammy in eigen woorden hoe het ervoor staat.'],
-      ['💸 Uitgaven', 'Alle betalingen die je deze periode hebt ingevoerd. Je kunt ze verwijderen als je een fout hebt gemaakt. "Nieuwe periode starten" wist alle uitgaven en begint opnieuw — je instellingen blijven bewaard.'],
+      ['💸 Uitgaven', 'Alle betalingen die je deze periode hebt ingevoerd. Je kunt ze verwijderen als je een fout hebt gemaakt. "Nieuwe periode starten" wist alle uitgaven en begint opnieuw — je instellingen blijven bewaard, en de afgesloten periode is terug te vinden onder "Vorige periodes".'],
       ['📅 Gepland', 'Voer hier komende kosten in met datum en bedrag. Sammy toont ze op het dashboard en waarschuwt als de datum nadert én je onvoldoende saldo hebt.'],
       ['🏠 Vaste lasten', 'Huur, boodschappenbudget, abonnementen. Informatief — zodat je altijd weet hoeveel er maandelijks "al weg is" voordat je begint.'],
       ['💾 Backup', 'Via ⚙️ Instellingen kun je een backup downloaden als klein JSON-bestand. Bewaar dit in je bestanden of stuur het naar jezelf via WhatsApp. Als je je browser opschoont en Sammy opnieuw opent, biedt hij aan die backup te herladen.'],
@@ -812,7 +864,7 @@ const T = {
       ['🔖 Snelkoppeling op je scherm', 'Sla Sammy op via Chrome → ⋮ → "Toevoegen aan startscherm". Dan open je hem elke ochtend met één tik, net als een echte app.'],
       ['⚡ Snelknoppen instellen', 'Maak snelknoppen voor terugkerende uitgaven: Koffie €2,50 · Brood €3,00 · Bus €1,90. Dan boek je een uitgave met één tik, zonder typen.'],
       ['🎯 Limiet instellen', 'Stel bij ⚙️ een realistisch weekbudget in als limiet. De meter en de kleurcode maken direct zichtbaar hoeveel "ruimte" je nog hebt.'],
-      ['🔄 Maandelijks resetten', 'Begin elke maand of week met "Nieuwe periode starten" op het Uitgaven-tabblad. Maak eerst een backup, dan wis je met een gerust hart.'],
+      ['🔄 Maandelijks resetten', 'Begin elke maand of week met "Nieuwe periode starten" op het Uitgaven-tabblad. Je oude periode blijft terug te vinden onder "Vorige periodes", dus je hoeft niet bang te zijn iets kwijt te raken.'],
     ],
     offline_stappen: [
       ['⭐ Samsung: Favorieten in Mijn Bestanden (aanbevolen)', 'Stap 1: Open "Mijn Bestanden" → zoek je Sammy.html → tik op de drie puntjes (⋮) naast het bestand → "Toevoegen aan favorieten". Stap 2: Houd je startscherm ingedrukt → Widgets of Apps → zoek "Mijn Bestanden" → sleep de snelkoppeling naar je startscherm. Open de app → ga naar Favorieten → tik op Sammy. Twee stappen, maar altijd betrouwbaar. Werkt ook voor al je andere HTML-apps zoals jukebox of spiegels.'],
@@ -892,6 +944,18 @@ const T = {
     lblWaarschuwingHint: 'Percentuale del limite a cui Sammy ti avvisa (predefinito 25%).',
     lblGrensInvoer: 'Soglia (%)',
     btnGrensOpslaan: 'Salva',
+    lblBewaartermijnTitel: 'Periodo di conservazione cronologia',
+    lblBewaartermijnHint: 'Per quanto tempo vuoi conservare le spese dei periodi chiusi in "Periodi precedenti"? Lascia il numero vuoto per conservare tutto.',
+    lblBewaarAantal: 'Numero',
+    lblBewaarEenheid: 'Unità',
+    optWeken: 'settimane', optMaanden: 'mesi', optJaar: 'anno',
+    btnBewaartermijnOpslaan: 'Salva',
+    melding_bewaartermijn_opgeslagen: 'Periodo di conservazione salvato',
+    melding_historiek_opgeruimd: '🗑️ {N} periodo/i vecchio/i eliminato/i secondo la tua impostazione. Fai pure un backup se vuoi conservarli.',
+    lblHistoriekTitel: 'Periodi precedenti',
+    lblHistoriekHint: 'Consulta le spese dei periodi chiusi in precedenza.',
+    lblHistoriekLeeg: 'Nessun periodo precedente.',
+    historiek_geen_detail: 'Nessuna spesa dettagliata conservata per questo periodo.',
     lblSnelknoppenTitel: 'Imposta pulsanti rapidi',
     lblSnelknoppenHint: 'Spese frequenti con un solo tocco (es. "Caffè €1,50").',
     lblSnelLabel: "Etichetta (es. 'Caffè')",
@@ -974,7 +1038,7 @@ const T = {
     ],
     gids_functies: [
       ['📊 Stato — il grande misuratore', 'Questo è il tuo portafoglio digitale. Il misuratore va dal verde (ampio) all\'oro (stretto) fino all\'arancione e al rosso. Sotto, Sammy ti dice in parole sue come stai.'],
-      ['💸 Spese', 'Tutti i pagamenti che hai inserito in questo periodo. Puoi eliminarli se hai fatto un errore. "Inizia nuovo periodo" cancella tutte le spese e ricomincia da capo — le impostazioni rimangono.'],
+      ['💸 Spese', 'Tutti i pagamenti che hai inserito in questo periodo. Puoi eliminarli se hai fatto un errore. "Inizia nuovo periodo" cancella tutte le spese e ricomincia da capo — le impostazioni rimangono, e il periodo chiuso resta consultabile in "Periodi precedenti".'],
       ['📅 Pianificato', 'Inserisci qui le spese future con data e importo. Sammy le mostra nella scheda Stato e ti avvisa quando la data si avvicina e hai saldo insufficiente.'],
       ['🏠 Spese fisse', 'Affitto, budget per la spesa, abbonamenti. Informativo — così sai sempre quanto è "già andato" ogni mese prima di iniziare.'],
       ['💾 Backup', 'Tramite ⚙️ Impostazioni puoi scaricare un backup come piccolo file JSON. Conservalo nei tuoi file o invialo a te stesso via WhatsApp. Se pulisci il browser e riapri Sammy, ti offrirà di ricaricare quel backup.'],
@@ -984,7 +1048,7 @@ const T = {
       ['🔖 Collegamento sulla schermata iniziale', 'Salva Sammy tramite Chrome → ⋮ → "Aggiungi a schermata Home". Poi lo apri ogni mattina con un tocco, come una vera app.'],
       ['⚡ Imposta pulsanti rapidi', 'Crea pulsanti per le spese ricorrenti: Caffè €1,50 · Pane €2,00 · Autobus €1,90. Poi registri una spesa con un solo tocco, senza digitare.'],
       ['🎯 Imposta un limite', 'Imposta un budget settimanale realistico come limite in ⚙️. Il misuratore e il codice colore mostrano subito quanto "spazio" hai ancora.'],
-      ['🔄 Reset mensile', 'Inizia ogni mese o settimana con "Inizia nuovo periodo" nella scheda Spese. Fai prima un backup, poi cancella in tutta tranquillità.'],
+      ['🔄 Reset mensile', 'Inizia ogni mese o settimana con "Inizia nuovo periodo" nella scheda Spese. Il periodo precedente resta consultabile in "Periodi precedenti", quindi non perdi nulla.'],
     ],
     offline_stappen: [
       ['⭐ Samsung: Preferiti in I miei file (consigliato)', 'Passo 1: Apri "I miei file" → cerca il tuo Sammy.html → tocca i tre puntini (⋮) accanto al file → "Aggiungi ai preferiti". Passo 2: Tieni premuta la schermata Home → Widget o App → cerca "I miei file" → trascina il collegamento sulla schermata. Apri l\'app → vai su Preferiti → tocca Sammy. Due passi, ma sempre affidabile. Funziona anche per tutte le altre app HTML come jukebox o specchi.'],
@@ -1018,11 +1082,14 @@ function pasTaalToe() {
     'lblSnelBoeken','lblWatGekocht','lblBedrag','btnBoekUitgave',
     'lblKomendeDagen','lblGeenGepland','lblOverzicht','lblGeenUitgaven',
     'lblAlleUitgaven','lblTotaalUitgegeven','btnNieuwePeriode',
+    'lblHistoriekTitel','lblHistoriekHint','lblHistoriekLeeg',
     'lblGeplandeTitel','lblGeplandHint','lblWatOmschrijving','lblDatum','lblSchatting','btnGeplandToevoegen','lblTotaalGepland',
     'lblVasteTitel','lblVasteHint','lblVasteOmschrijving','lblVasteBedrag','btnVasteToevoegen','lblGeenVaste','lblTotaalVaste',
     'lblSaldoTitel','lblSaldoHint','lblSaldoInvoer','btnSaldoOpslaan',
     'lblLimietTitel','lblLimietHint','lblLimietInvoer','btnLimietOpslaan',
     'lblWaarschuwingTitel','lblWaarschuwingHint','lblGrensInvoer','btnGrensOpslaan',
+    'lblBewaartermijnTitel','lblBewaartermijnHint','lblBewaarAantal','lblBewaarEenheid',
+    'optWeken','optMaanden','optJaar','btnBewaartermijnOpslaan',
     'lblSnelknoppenTitel','lblSnelknoppenHint','lblSnelLabel','lblSnelBedrag','btnSnelToevoegen',
     'lblOfflineTitel','lblOfflineHint',
     'lblBackupTitel','lblBackupHint','btnExport','lblImportLabel',
@@ -1037,9 +1104,11 @@ function pasTaalToe() {
   ];
   ids.forEach(id => { const el = document.getElementById(id); if (el) el.textContent = t(id); });
   document.getElementById('bankBannerTekst').textContent = t('bankBanner');
+  document.getElementById('bewaarAantalInput').placeholder = '∞';
   document.documentElement.lang = taal;
   tekenOfflineStappen();
   tekenGids();
+  tekenHistoriek();
 }
 
 function tekenOfflineStappen() {
@@ -1131,14 +1200,19 @@ function tekenGidsCirkels() {
 }
 
 
-let staat = { saldo: null, limiet: null, grens: 25, vasteLasten: [], geplande: [], uitgaven: [], snelKnoppen: [], spaarsaldo: 0, periodeHistoriek: [], meeTegenVallers: [] };
+let staat = { saldo: null, limiet: null, grens: 25, vasteLasten: [], geplande: [], uitgaven: [], snelKnoppen: [], spaarsaldo: 0, periodeHistoriek: [], meeTegenVallers: [], bewaartermijn: { aantal: null, eenheid: 'maanden' } };
 
 function laad() {
   const op = localStorage.getItem('regelneef_v2');
   if (op) try { staat = { ...staat, ...JSON.parse(op) }; } catch(e) {}
+  if (!staat.bewaartermijn) staat.bewaartermijn = { aantal: null, eenheid: 'maanden' };
   if (staat.limiet !== null) document.getElementById('limietInput').value = staat.limiet;
   if (staat.saldo !== null) document.getElementById('saldoInput').value = staat.saldo;
   document.getElementById('grensInput').value = staat.grens;
+  if (staat.bewaartermijn.aantal !== null && staat.bewaartermijn.aantal !== undefined) {
+    document.getElementById('bewaarAantalInput').value = staat.bewaartermijn.aantal;
+  }
+  document.getElementById('bewaarEenheidInput').value = staat.bewaartermijn.eenheid || 'maanden';
 }
 function sla() { localStorage.setItem('regelneef_v2', JSON.stringify(staat)); }
 
@@ -1155,6 +1229,7 @@ function toonTab(naam) {
   });
   if (naam === 'gids') tekenGids();
   if (naam === 'balans') tekenBalans();
+  if (naam === 'uitgaven') tekenHistoriek();
   teken();
 }
 
@@ -1370,14 +1445,16 @@ function periodeResetten() {
   // Vraag eerst of de periode gewist mag worden
   if (!confirm(t('confirm_periode'))) return;
 
+  const naamPeriode = new Date().toLocaleDateString(taal === 'it' ? 'it-IT' : 'nl-NL', {month:'long', year:'numeric'});
+  // Bewaar de volledige uitgavenlijst van deze periode, ongeacht de spaarsaldo-keuze
+  const uitgavenSnapshot = [...staat.uitgaven];
+
   // Halfautomatisch: toon bevestiging over spaarsaldo
   if (verschil !== null) {
     const bedragStr = '€ ' + Math.abs(verschil).toFixed(2).replace('.', ',');
     const isOverschot = verschil >= 0;
     const tekstKey = isOverschot ? 'periode_overschot' : 'periode_tekort';
     const uitlegTekst = t(tekstKey, {X: bedragStr.replace('€ ','')}) + '\n\n' + t('periode_vraag_spaar');
-
-    const naamPeriode = new Date().toLocaleDateString(taal === 'it' ? 'it-IT' : 'nl-NL', {month:'long', year:'numeric'});
 
     // Toon keuzevenster
     const keuze = bevestigBalans(uitlegTekst, isOverschot);
@@ -1390,6 +1467,7 @@ function periodeResetten() {
         label: naamPeriode,
         bedrag: verschil,
         uitgegeven: uitgegeven,
+        uitgaven: uitgavenSnapshot,
       });
       toonMelding(t('melding_spaar_toegevoegd'));
     } else {
@@ -1400,11 +1478,23 @@ function periodeResetten() {
         label: naamPeriode,
         bedrag: null, // niet doorgevoerd
         uitgegeven: uitgegeven,
+        uitgaven: uitgavenSnapshot,
       });
     }
+  } else {
+    // Geen saldo ingesteld: toch de uitgavenlijst bewaren voor de geschiedenis
+    staat.periodeHistoriek = staat.periodeHistoriek || [];
+    staat.periodeHistoriek.push({
+      datum: new Date().toISOString(),
+      label: naamPeriode,
+      bedrag: null,
+      uitgegeven: uitgegeven,
+      uitgaven: uitgavenSnapshot,
+    });
   }
 
   staat.uitgaven = [];
+  opruimenHistoriek();
   sla(); teken(); toonMelding(t('melding_nieuwe_periode'));
 }
 
@@ -1416,6 +1506,80 @@ function bevestigBalans(tekst, isOverschot) {
     '✓ OK = ' + t('periode_ja') + '\n' +
     '✗ Annuleren = ' + t('periode_nee');
   return confirm(bevestigTekst);
+}
+
+// ════════════════════════════════════════════════════════
+//  HISTORIEK — uitgaven van vorige periodes bekijken
+// ════════════════════════════════════════════════════════
+function bewaartermijnOpslaan() {
+  const aantalRaw = document.getElementById('bewaarAantalInput').value;
+  const eenheid = document.getElementById('bewaarEenheidInput').value;
+  const aantal = aantalRaw === '' ? null : parseInt(aantalRaw);
+  if (aantal !== null && (isNaN(aantal) || aantal < 0)) { toonMelding(t('melding_voer_geldig')); return; }
+  staat.bewaartermijn = { aantal: (aantal === 0 ? null : aantal), eenheid };
+  opruimenHistoriek();
+  sla(); tekenHistoriek();
+  toonMelding(t('melding_bewaartermijn_opgeslagen'));
+}
+
+function grensDatumBewaartermijn() {
+  const bt = staat.bewaartermijn || { aantal: null, eenheid: 'maanden' };
+  if (bt.aantal === null || bt.aantal === undefined) return null; // onbeperkt
+  const grens = new Date();
+  if (bt.eenheid === 'weken') grens.setDate(grens.getDate() - bt.aantal * 7);
+  else if (bt.eenheid === 'jaar') grens.setFullYear(grens.getFullYear() - bt.aantal);
+  else grens.setMonth(grens.getMonth() - bt.aantal); // maanden (standaard)
+  return grens;
+}
+
+function opruimenHistoriek() {
+  const grens = grensDatumBewaartermijn();
+  if (grens === null) return; // onbeperkt bewaren
+  const voor = (staat.periodeHistoriek || []).length;
+  staat.periodeHistoriek = (staat.periodeHistoriek || []).filter(p => new Date(p.datum) >= grens);
+  const verwijderd = voor - staat.periodeHistoriek.length;
+  if (verwijderd > 0) toonMelding(t('melding_historiek_opgeruimd', {N: verwijderd}));
+}
+
+function tekenHistoriek() {
+  const el = document.getElementById('historiekLijst');
+  if (!el) return;
+  const periodes = [...(staat.periodeHistoriek || [])].reverse();
+  if (!periodes.length) { el.innerHTML = `<li class="hint">${t('lblHistoriekLeeg')}</li>`; return; }
+
+  el.innerHTML = periodes.map((p, i) => {
+    const heeftDetail = Array.isArray(p.uitgaven) && p.uitgaven.length > 0;
+    const detailId = `historiekDetail_${i}`;
+    const detailInhoud = heeftDetail
+      ? p.uitgaven.map(u => {
+          const d = new Date(u.datum);
+          const ds = d.toLocaleDateString(taal === 'it' ? 'it-IT' : 'nl-NL', {day:'numeric', month:'short'});
+          return `<li class="post-item"><span class="post-naam">${u.naam}</span>
+            <span class="post-datum">${ds}</span>
+            <span class="post-bedrag">− € ${u.bedrag.toFixed(2).replace('.',',')}</span></li>`;
+        }).join('')
+      : `<li class="hint" style="margin:4px 0 0">${t('historiek_geen_detail')}</li>`;
+
+    return `<li class="historiek-item">
+      <div class="historiek-kop" onclick="historiekToggle('${detailId}')">
+        <div>
+          <div class="historiek-naam">${p.label}</div>
+          <div class="historiek-sub">${new Date(p.datum).toLocaleDateString(taal === 'it' ? 'it-IT' : 'nl-NL', {day:'numeric', month:'short', year:'numeric'})}</div>
+        </div>
+        <span class="historiek-bedrag">− € ${(p.uitgegeven || 0).toFixed(2).replace('.',',')}</span>
+        <span class="historiek-pijl" id="${detailId}_pijl">▶</span>
+      </div>
+      <ul class="post-lijst historiek-detail" id="${detailId}">${detailInhoud}</ul>
+    </li>`;
+  }).join('');
+}
+
+function historiekToggle(id) {
+  const detail = document.getElementById(id);
+  const pijl = document.getElementById(id + '_pijl');
+  if (!detail) return;
+  const open = detail.classList.toggle('open');
+  if (pijl) pijl.classList.toggle('open', open);
 }
 
 // ════════════════════════════════════════════════════════
@@ -1975,6 +2139,7 @@ function ttsVerzamelTekst() {
 laad();
 pasTaalToe();
 teken();
+tekenHistoriek();
 document.getElementById('geplandDatum').valueAsDate = new Date();
 checkBackupBijOpstart();
 ttsUpdateUI();
@@ -2099,15 +2264,7 @@ document.addEventListener('visibilitychange', () => {
   if (titleEl) titleEl.textContent = projectName;
   var modalTitleEl = document.getElementById('jdh-modal-title');
   if (modalTitleEl) modalTitleEl.textContent = projectName;
-
-  function blockApp() {
-    document.body.innerHTML = '';
-    document.body.style.cssText =
-      'margin:0;background:#0d1a07;display:flex;align-items:center;' +
-      'justify-content:center;height:100vh;font-family:sans-serif;';
-    document.body.innerHTML =
-      '<div style="text-align:center;color:#e55;max-width:440px;padding:24px">' +
-      '<div style="font-size:52px">⛔</div>' +
-      '<h2 style="color:#e55;margin:12px 0 8px">Toegang geblokkeerd</h2>' +
-      '<p style="color:#ddd;font-size:14px">De copyright-informatie van ' +
-      '<strong style="color:#8
+})();
+</script>
+</body>
+</html>
