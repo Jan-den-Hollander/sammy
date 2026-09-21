@@ -8,9 +8,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Sammy">
 <meta name="theme-color" content="#2D5016">
-<link rel="manifest" id="sammyManifestLink">
-<link rel="icon" id="sammyFavicon">
-<link rel="apple-touch-icon" id="sammyAppleIcon">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Sammy – Jouw Financiële Regelneef</title>
 <!--
   ╔══════════════════════════════════════════════════════════════╗
@@ -360,87 +360,13 @@
   #melding.zichtbaar { opacity: 1; }
 </style>
 
-<!-- ═══════════════════════════════════════════════════════════════════
-  PWA-SETUP (alles binnen dit ene bestand — geen aparte manifest.json
-  of icoonbestanden nodig)
-  - Bouwt een app-manifest en icoon on-the-fly (als Blob/data-URL)
-  - Registreert een minimale service worker voor offline-gebruik
-  - Zorgt dat "Toevoegen aan startscherm" een echt app-icoon geeft en
-    de pagina zonder browserbalk opent (standalone)
-════════════════════════════════════════════════════════════════════ -->
 <script>
-(function() {
-  try {
-    // Eenvoudig groen "€"-icoon, als SVG, hergebruikt voor favicon,
-    // apple-touch-icon én de manifest-iconen.
-    var svgIcoon =
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">' +
-      '<rect width="512" height="512" rx="100" fill="#2D5016"/>' +
-      '<text x="256" y="330" font-family="Georgia, serif" font-size="300" ' +
-      'font-weight="700" fill="#F5F0E8" text-anchor="middle">€</text>' +
-      '</svg>';
-    var svgBase64 = btoa(unescape(encodeURIComponent(svgIcoon)));
-    var iconDataUrl = 'data:image/svg+xml;base64,' + svgBase64;
-
-    var faviconEl = document.getElementById('sammyFavicon');
-    if (faviconEl) faviconEl.href = iconDataUrl;
-    var appleIconEl = document.getElementById('sammyAppleIcon');
-    if (appleIconEl) appleIconEl.href = iconDataUrl;
-
-    var manifest = {
-      name: 'Sammy – Jouw Financiële Regelneef',
-      short_name: 'Sammy',
-      description: 'Bilingue NL/IT persoonlijke financiële regelneef.',
-      start_url: '.',
-      scope: '.',
-      display: 'standalone',
-      orientation: 'portrait',
-      background_color: '#F5F0E8',
-      theme_color: '#2D5016',
-      icons: [
-        { src: iconDataUrl, sizes: '192x192', type: 'image/svg+xml', purpose: 'any' },
-        { src: iconDataUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'any' },
-        { src: iconDataUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'maskable' }
-      ]
-    };
-    var manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
-    var manifestUrl = URL.createObjectURL(manifestBlob);
-    var manifestEl = document.getElementById('sammyManifestLink');
-    if (manifestEl) manifestEl.href = manifestUrl;
-
-    // Minimale service worker: cachet de pagina zelf zodat Sammy ook
-    // offline (opnieuw) opstart, en maakt de app "installeerbaar".
-    // Werkt alleen via https/Vercel — op een lokaal bestand (file://)
-    // slaat de browser dit gewoon over, dat is geen probleem.
-    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-      var swCode =
-        "const CACHE = 'sammy-cache-v1';" +
-        "self.addEventListener('install', e => { self.skipWaiting(); });" +
-        "self.addEventListener('activate', e => { self.clients.claim(); });" +
-        "self.addEventListener('fetch', e => {" +
-        "  if (e.request.method !== 'GET') return;" +
-        "  e.respondWith(" +
-        "    caches.open(CACHE).then(cache =>" +
-        "      cache.match(e.request).then(cached => {" +
-        "        const netFetch = fetch(e.request).then(resp => {" +
-        "          if (resp && resp.ok) cache.put(e.request, resp.clone());" +
-        "          return resp;" +
-        "        }).catch(() => cached);" +
-        "        return cached || netFetch;" +
-        "      })" +
-        "    )" +
-        "  );" +
-        "});";
-      var swBlob = new Blob([swCode], { type: 'application/javascript' });
-      var swUrl = URL.createObjectURL(swBlob);
-      navigator.serviceWorker.register(swUrl).catch(function(e) {
-        console.error('Service worker registratie mislukt:', e);
-      });
-    }
-  } catch (e) {
-    console.error('PWA-setup fout:', e);
-  }
-})();
+// Service worker (echt bestand sw.js): installeren en offline gebruik
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  });
+}
 </script>
 </head>
 <body>
